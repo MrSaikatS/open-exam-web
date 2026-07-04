@@ -41,7 +41,7 @@ export const auth = betterAuth({
   },
 
   advanced: {
-    cookiePrefix: "cit",
+    cookiePrefix: "openexam",
     useSecureCookies: process.env.NODE_ENV === "production",
     database: {
       generateId: false,

@@ -27,7 +27,6 @@ CREATE TABLE "account" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "accountId" TEXT NOT NULL,
     "providerId" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
     "accessToken" TEXT,
     "refreshToken" TEXT,
     "idToken" TEXT,
@@ -37,6 +36,7 @@ CREATE TABLE "account" (
     "password" TEXT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
+    "userId" TEXT NOT NULL,
     CONSTRAINT "account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -61,6 +61,9 @@ CREATE UNIQUE INDEX "session_token_key" ON "session"("token");
 
 -- CreateIndex
 CREATE INDEX "account_userId_idx" ON "account"("userId");
+
+-- CreateIndex
+CREATE INDEX "account_providerId_accountId_idx" ON "account"("providerId", "accountId");
 
 -- CreateIndex
 CREATE INDEX "verification_identifier_idx" ON "verification"("identifier");
