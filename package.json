@@ -1,0 +1,64 @@
+{
+  "name": "open-exam-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "eslint",
+    "prod": "prisma generate && next build && next start",
+    "migrate": "prisma migrate dev && prisma generate",
+    "studio": "prisma studio --browser none"
+  },
+  "dependencies": {
+    "@base-ui/react": "^1.6.0",
+    "@prisma/adapter-libsql": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "@t3-oss/env-nextjs": "^0.13.11",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "dotenv": "^17.4.2",
+    "lucide-react": "^1.23.0",
+    "next": "^16.2.10",
+    "next-themes": "^0.4.6",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-toastify": "^11.1.0",
+    "sharp": "^0.34.5",
+    "tailwind-merge": "^3.6.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.2",
+    "@types/node": "^25.9.4",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^16.2.10",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "prettier": "^3.9.4",
+    "prettier-plugin-tailwindcss": "^0.8.0",
+    "prisma": "^7.8.0",
+    "shadcn": "^4.13.0",
+    "tailwindcss": "^4.3.2",
+    "tw-animate-css": "^1.4.0",
+    "typescript": "^5.9.3"
+  },
+  "trustedDependencies": [
+    "@prisma/engines",
+    "msw",
+    "prisma",
+    "sharp",
+    "unrs-resolver"
+  ],
+  "engines": {
+    "node": ">=24.x.x",
+    "npm": ">=11.x.x"
+  },
+  "author": "Saikat Sardar",
+  "license": "MIT",
+  "homepage": "https://github.com/MrSaikatS/open-exam-web#readme"
+}
