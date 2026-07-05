@@ -39,3 +39,29 @@ export const registerFormSchema = z
   });
 
 export type RegisterFormType = z.infer<typeof registerFormSchema>;
+
+export const forgotPasswordSchema = z.object({
+  email: z
+    .email({ error: "Invalid email address" })
+    .max(64, { error: "Email must not exceed 64 characters" })
+    .toLowerCase(),
+});
+
+export type ForgotPasswordFormType = z.infer<typeof forgotPasswordSchema>;
+
+export const resetPasswordSchema = z
+  .object({
+    password: z
+      .string()
+      .min(8, { error: "Password must be minimum 8 characters long" })
+      .max(128, { error: "Password must not exceed 128 characters" }),
+    confirmPassword: z
+      .string()
+      .min(1, { error: "Please confirm your password" }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    error: "Password didn't match",
+    path: ["confirmPassword"],
+  });
+
+export type ResetPasswordFormType = z.infer<typeof resetPasswordSchema>;
