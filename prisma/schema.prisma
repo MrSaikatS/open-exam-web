@@ -25,6 +25,7 @@ model User {
   exams              Exam[]             @relation("CreatedExams")
   examAssignments    ExamAssignment[]   @relation("AssignedExams")
   createdAssignments ExamAssignment[]   @relation("CreatedAssignments")
+  examAttempts       ExamAttempt[]
 
   @@unique([email])
   @@map("user")
@@ -95,6 +96,7 @@ model Exam {
 
   questions    Question[]
   assignments  ExamAssignment[]
+  attempts     ExamAttempt[]
 
   @@index([createdById])
   @@map("exam")
@@ -130,6 +132,45 @@ model Question {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  answers Answer[]
+
   @@index([examId])
   @@map("question")
+}
+
+model ExamAttempt {
+  id          String    @id @default(uuid())
+  userId      String
+  examId      String
+  status      String    @default("in_progress")
+  startedAt   DateTime  @default(now())
+  submittedAt DateTime?
+  autoScore   Int?
+  totalScore  Int?
+  maxScore    Int       @default(0)
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exam    Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  answers Answer[]
+
+  @@unique([userId, examId])
+  @@index([examId])
+  @@index([userId])
+  @@map("exam_attempt")
+}
+
+model Answer {
+  id         String  @id @default(uuid())
+  attemptId  String
+  questionId String
+  text       String?
+  score      Int?
+
+  attempt  ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, questionId])
+  @@index([attemptId])
+  @@index([questionId])
+  @@map("answer")
 }

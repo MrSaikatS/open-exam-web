@@ -8,6 +8,16 @@ import { useState } from "react";
 import { toast } from "react-toastify";
 import { deleteExam, publishExam } from "@/server/actions/exam";
 import { Button } from "../shadcnui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../shadcnui/dialog";
 
 type ExamRow = {
   id: string;
@@ -30,12 +40,7 @@ const ExamsTable = ({ exams, basePath }: ExamsTableProps) => {
 
   const isAdmin = basePath === "/admin";
 
-  const handleDelete = async (id: string, status: string) => {
-    const msg =
-      status === "published" ?
-        "This exam is published and assigned students may be affected. Are you sure you want to permanently delete it?"
-      : "Are you sure you want to delete this exam?";
-    if (!confirm(msg)) return;
+  const handleDelete = async (id: string) => {
     setLoadingId(id);
     await deleteExam(id);
     toast.success("Exam deleted");
@@ -132,13 +137,49 @@ const ExamsTable = ({ exams, basePath }: ExamsTableProps) => {
                     </>
                   )}
                   {(exam.status === "draft" || isAdmin) && (
-                    <Button
-                      variant="outline"
-                      size="icon-lg"
-                      onClick={() => handleDelete(exam.id, exam.status)}
-                      disabled={loadingId === exam.id}>
-                      <Trash2Icon className="text-destructive size-4" />
-                    </Button>
+                    <Dialog>
+                      <DialogTrigger
+                        render={
+                          <Button
+                            variant="outline"
+                            size="icon-lg"
+                            disabled={loadingId === exam.id}>
+                            <Trash2Icon className="text-destructive size-4" />
+                          </Button>
+                        }
+                      />
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Delete Exam</DialogTitle>
+                          <DialogDescription>
+                            {exam.status === "published" ?
+                              "This exam is published and assigned students may be affected. Are you sure you want to permanently delete it?"
+                            : "Are you sure you want to delete this exam?"}
+                          </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter showCloseButton>
+                          <DialogClose
+                            render={
+                              <Button
+                                variant="destructive"
+                                size="lg"
+                                onClick={() => handleDelete(exam.id)}
+                                disabled={loadingId === exam.id}>
+                                {loadingId === exam.id ?
+                                  <>
+                                    <Loader2Icon className="size-4 animate-spin" />{" "}
+                                    Deleting...
+                                  </>
+                                : <>
+                                    <Trash2Icon className="size-4" /> Delete
+                                  </>
+                                }
+                              </Button>
+                            }
+                          />
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   )}
                 </div>
               </td>

@@ -111,3 +111,24 @@ export const questionFormSchema = z.object({
 });
 
 export type QuestionFormType = z.infer<typeof questionFormSchema>;
+
+export const createUserSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, { error: "Name must be at least 2 characters long" })
+    .max(64, { error: "Name must not exceed 64 characters" }),
+  email: z
+    .email({ error: "Invalid email address" })
+    .max(64, { error: "Email must not exceed 64 characters" })
+    .toLowerCase(),
+  password: z
+    .string()
+    .min(8, { error: "Password must be minimum 8 characters long" })
+    .max(128, { error: "Password must not exceed 128 characters" }),
+  role: z.enum(["admin", "examiner", "proctor", "student"], {
+    error: "Please select a role",
+  }),
+});
+
+export type CreateUserFormType = z.infer<typeof createUserSchema>;
