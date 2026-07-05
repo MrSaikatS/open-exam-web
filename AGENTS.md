@@ -61,9 +61,9 @@ See existing examples under `src/components/Auth/`.
 
 ## Verification
 
-- **Primary check**: `bun lint` — runs `eslint` with `eslint-config-next` core-web-vitals + typescript.
-- **Secondary / type gate**: `bun run build`. There is no separate `typecheck` script and no test framework; TypeScript errors surface only during the build.
-- **Full prod check**: `bun prod` — `prisma generate && eslint && next build && next start`. Use before schema or env changes.
+- **Lint**: `bun lint` — runs `eslint` with `eslint-config-next` core-web-vitals + typescript.
+- **TypeScript**: `bun typecheck` — `tsc --noEmit` (fast, use during iteration).
+- **Full prod check**: `bun prod` — `prisma generate && eslint && next build && next start`. Use before schema or env changes. Avoid running `bun run build` for routine TS checks — it's heavy; use `bun typecheck` instead.
 
 ## Prisma (Prisma 7, custom output)
 
@@ -115,3 +115,13 @@ See existing examples under `src/components/Auth/`.
 - `.env` is gitignored; `.env.example` is the committed template. Do not commit secrets.
 - `CHECKPOINT_DISABLE=1` is set to silence Prisma telemetry.
 - No CI workflows or pre-commit hooks exist. Pre-PR verification is `bun lint` then `bun run build` (see Verification above).
+
+## Git commits
+
+Use PowerShell here-strings:
+
+```powershell
+git commit -m @"
+commit message here
+"@
+```

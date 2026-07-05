@@ -1,3 +1,4 @@
+import ToastProvider from "@/components/Providers/ToastProvider";
 import ThemeProvider from "@/components/Providers/ThemeProvider";
 import { notoSansHeading, nunitoSans } from "@/lib/fonts";
 import { LayoutProps } from "@/lib/types";
@@ -21,6 +22,7 @@ const RootLayout = ({ children }: LayoutProps) => {
           defaultTheme="dark"
           enableSystem={false}>
           {children}
+          <ToastProvider />
         </ThemeProvider>
       </body>
     </html>

@@ -1,18 +1,17 @@
 "use client";
 
 import { authClient } from "@/lib/auth-client";
-import { loginFormSchema, LoginFormType } from "@/lib/zodSchema";
+import { registerFormSchema, RegisterFormType } from "@/lib/zodSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2Icon, LockIcon } from "lucide-react";
+import { Loader2Icon, UserPlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import { Button } from "../shadcnui/button";
-import { Checkbox } from "../shadcnui/checkbox";
 import { Field, FieldError, FieldLabel } from "../shadcnui/field";
 import { Input } from "../shadcnui/input";
 
-const LoginForm = () => {
+const RegisterForm = () => {
   const { replace } = useRouter();
 
   const {
@@ -21,24 +20,25 @@ const LoginForm = () => {
     formState: { isSubmitting, isValid },
     reset,
   } = useForm({
-    resolver: zodResolver(loginFormSchema),
+    resolver: zodResolver(registerFormSchema),
     defaultValues: {
+      name: "",
       email: "",
       password: "",
-      rememberMe: false,
+      confirmPassword: "",
     },
     mode: "all",
   });
 
-  const loginFormHandler = async ({
+  const registerFormHandler = async ({
+    name,
     email,
     password,
-    rememberMe,
-  }: LoginFormType) => {
-    const { error } = await authClient.signIn.email({
+  }: RegisterFormType) => {
+    const { error } = await authClient.signUp.email({
+      name,
       email,
       password,
-      rememberMe,
     });
 
     if (error) {
@@ -46,16 +46,36 @@ const LoginForm = () => {
       return;
     }
 
-    toast.success("Welcome back!");
+    toast.success("Account created successfully!");
     reset();
     replace("/dashboard");
   };
 
   return (
     <form
-      onSubmit={handleSubmit(loginFormHandler)}
+      onSubmit={handleSubmit(registerFormHandler)}
       className="grid gap-6"
       noValidate>
+      {/* Name field */}
+      <Controller
+        name="name"
+        control={control}
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel htmlFor={field.name}>Name</FieldLabel>
+            <Input
+              {...field}
+              id={field.name}
+              type="text"
+              aria-invalid={fieldState.invalid}
+              placeholder="Enter your name"
+              autoComplete="name"
+            />
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )}
+      />
+
       {/* Email field */}
       <Controller
         name="email"
@@ -88,29 +108,29 @@ const LoginForm = () => {
               id={field.name}
               type="password"
               aria-invalid={fieldState.invalid}
-              placeholder="Enter your password"
-              autoComplete="current-password"
+              placeholder="Create a password"
+              autoComplete="new-password"
             />
             {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
           </Field>
         )}
       />
 
-      {/* Remember Me checkbox */}
+      {/* Confirm Password field */}
       <Controller
-        name="rememberMe"
+        name="confirmPassword"
         control={control}
         render={({ field, fieldState }) => (
-          <Field
-            data-invalid={fieldState.invalid}
-            orientation={"horizontal"}>
-            <Checkbox
-              checked={field.value}
-              onCheckedChange={(checked) => field.onChange(checked)}
-              className="cursor-pointer"
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel htmlFor={field.name}>Confirm Password</FieldLabel>
+            <Input
+              {...field}
+              id={field.name}
+              type="password"
+              aria-invalid={fieldState.invalid}
+              placeholder="Confirm your password"
+              autoComplete="new-password"
             />
-            <FieldLabel htmlFor={field.name}>Keep me signed in</FieldLabel>
-
             {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
           </Field>
         )}
@@ -123,10 +143,10 @@ const LoginForm = () => {
         disabled={isSubmitting || !isValid}>
         {isSubmitting ?
           <>
-            <Loader2Icon className="animate-spin" /> Logging in...
+            <Loader2Icon className="animate-spin" /> Creating account...
           </>
         : <>
-            <LockIcon /> Login
+            <UserPlusIcon /> Register
           </>
         }
       </Button>
@@ -134,4 +154,4 @@ const LoginForm = () => {
   );
 };
 
-export default LoginForm;
+export default RegisterForm;
