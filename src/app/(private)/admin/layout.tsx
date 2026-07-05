@@ -14,7 +14,7 @@ const AdminLayout = async ({ children }: LayoutProps) => {
     redirect("/");
   }
 
-  if (session.user.role !== "administrator") {
+  if (session.user.role !== "admin") {
     const role = session.user.role;
     if (role === "examiner") redirect("/examiner");
     if (role === "proctor") redirect("/proctor");

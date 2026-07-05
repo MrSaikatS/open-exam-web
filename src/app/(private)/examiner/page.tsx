@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+
+export const metadata: Metadata = {
+  title: "Dashboard",
+  description: "Examiner dashboard",
+};
 
 const ExaminerDashboard = async () => {
   const session = await auth.api.getSession({ headers: await headers() });

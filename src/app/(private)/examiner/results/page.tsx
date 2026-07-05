@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "All Results",
+  description: "View all results",
+};
+
 const ExaminerAllResultsPage = () => {
   return (
     <section>

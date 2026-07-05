@@ -103,7 +103,7 @@ See existing examples under `src/components/Auth/`.
 ## Admin plugin & roles
 
 - Admin plugin is configured in `src/lib/auth.ts` with custom access control from `src/lib/auth/permissions.ts`.
-- Four roles exist: `administrator`, `examiner`, `proctor`, `student` (default role).
+- Four roles exist: `admin`, `examiner`, `proctor`, `student` (default role).
 - Custom resources: `exam` (create, read, update, delete, publish, assign) and `result` (read, export, delete). These extend Better Auth's default `user` / `session` statements.
 - Server-side: `auth.api.userHasPermission({ body: { userId, permission: { exam: ["create"] } } })`
 - Client-side: `authClient.admin.hasPermission({ permission: { exam: ["create"] } })`

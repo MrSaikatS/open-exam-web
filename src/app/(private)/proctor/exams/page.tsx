@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Assigned Exams",
+  description: "View assigned exams",
+};
+
 const ProctorExamsPage = () => {
   return (
     <section>

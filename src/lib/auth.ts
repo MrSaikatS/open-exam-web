@@ -3,13 +3,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { admin } from "better-auth/plugins";
 import { nextCookies } from "better-auth/next-js";
 import { hashPasswordFunction, verifyPasswordFunction } from "./argon2";
-import {
-  ac,
-  administrator,
-  examiner,
-  proctor,
-  student,
-} from "./auth/permissions";
+import { ac, adminRole, examiner, proctor, student } from "./auth/permissions";
 import prisma from "./database/dbClient";
 import { serverEnv } from "./env/serverEnv";
 
@@ -29,7 +23,7 @@ export const auth = betterAuth({
       ac,
       defaultRole: "student",
       roles: {
-        administrator,
+        admin: adminRole,
         examiner,
         proctor,
         student,

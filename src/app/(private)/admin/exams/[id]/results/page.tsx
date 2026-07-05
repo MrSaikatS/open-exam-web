@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Exam Results",
+  description: "View exam results",
+};
+
 const AdminExamResultsPage = () => {
   return (
     <section>

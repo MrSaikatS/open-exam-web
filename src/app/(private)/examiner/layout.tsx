@@ -16,7 +16,7 @@ const ExaminerLayout = async ({ children }: LayoutProps) => {
 
   if (session.user.role !== "examiner") {
     const role = session.user.role;
-    if (role === "administrator") redirect("/admin");
+    if (role === "admin") redirect("/admin");
     if (role === "proctor") redirect("/proctor");
     redirect("/student");
   }

@@ -9,7 +9,7 @@ const statement = {
 
 const ac = createAccessControl(statement);
 
-const administrator = ac.newRole({
+const adminRole = ac.newRole({
   exam: ["create", "read", "update", "delete", "publish", "assign"],
   result: ["read", "export", "delete"],
   ...adminAc.statements,
@@ -28,4 +28,4 @@ const proctor = ac.newRole({
 
 const student = ac.newRole({});
 
-export { ac, administrator, examiner, proctor, student, statement };
+export { ac, adminRole, examiner, proctor, student, statement };

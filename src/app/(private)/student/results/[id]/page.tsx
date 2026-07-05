@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Result Details",
+  description: "View result details",
+};
+
 const StudentResultDetailPage = () => {
   return (
     <section>

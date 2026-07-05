@@ -51,7 +51,7 @@ const LoginForm = () => {
     toast.success("Welcome back!");
     reset();
 
-    if (role === "administrator") replace("/admin");
+    if (role === "admin") replace("/admin");
     else if (role === "examiner") replace("/examiner");
     else if (role === "proctor") replace("/proctor");
     else replace("/student");

@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Monitor Exam",
+  description: "Monitor exam in progress",
+};
+
 const ProctorMonitorExamPage = () => {
   return (
     <section>
