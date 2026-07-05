@@ -2,6 +2,8 @@ import { auth } from "@/lib/auth";
 import { LayoutProps } from "@/lib/types";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { SidebarLayout } from "@/components/Sidebar/SidebarLayout";
+import { studentNav } from "@/components/Sidebar/nav-config";
 
 const StudentLayout = async ({ children }: LayoutProps) => {
   const session = await auth.api.getSession({
@@ -19,7 +21,7 @@ const StudentLayout = async ({ children }: LayoutProps) => {
     if (role === "proctor") redirect("/proctor");
   }
 
-  return <>{children}</>;
+  return <SidebarLayout groups={studentNav}>{children}</SidebarLayout>;
 };
 
 export default StudentLayout;

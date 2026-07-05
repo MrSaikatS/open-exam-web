@@ -12,7 +12,7 @@ const PrivateLayout = async ({ children }: LayoutProps) => {
     redirect("/");
   }
 
-  return <main className="">{children}</main>;
+  return <>{children}</>;
 };
 
 export default PrivateLayout;

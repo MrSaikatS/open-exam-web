@@ -2,6 +2,8 @@ import { auth } from "@/lib/auth";
 import { LayoutProps } from "@/lib/types";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { SidebarLayout } from "@/components/Sidebar/SidebarLayout";
+import { proctorNav } from "@/components/Sidebar/nav-config";
 
 const ProctorLayout = async ({ children }: LayoutProps) => {
   const session = await auth.api.getSession({
@@ -19,7 +21,7 @@ const ProctorLayout = async ({ children }: LayoutProps) => {
     redirect("/student");
   }
 
-  return <>{children}</>;
+  return <SidebarLayout groups={proctorNav}>{children}</SidebarLayout>;
 };
 
 export default ProctorLayout;

@@ -2,6 +2,8 @@ import { auth } from "@/lib/auth";
 import { LayoutProps } from "@/lib/types";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { SidebarLayout } from "@/components/Sidebar/SidebarLayout";
+import { adminNav } from "@/components/Sidebar/nav-config";
 
 const AdminLayout = async ({ children }: LayoutProps) => {
   const session = await auth.api.getSession({
@@ -19,7 +21,7 @@ const AdminLayout = async ({ children }: LayoutProps) => {
     redirect("/student");
   }
 
-  return <>{children}</>;
+  return <SidebarLayout groups={adminNav}>{children}</SidebarLayout>;
 };
 
 export default AdminLayout;
