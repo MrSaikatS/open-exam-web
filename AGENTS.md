@@ -6,13 +6,106 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 <!-- END:nextjs-agent-rules -->
 
-<!-- BEGIN:form-patterns -->
+# Stack
 
-# Form Patterns
+- Next.js 16.2 + React 19.2, App Router, Turbopack, React Compiler on, `typedRoutes: true`
+- Prisma 7 (`provider = "prisma-client"`, output `../generated/prisma`) + `@prisma/adapter-libsql` (SQLite file-backed)
+- Tailwind v4 (CSS-only config in `globals.css`; **no** `tailwind.config.ts`; PostCSS plugin `@tailwindcss/postcss`)
+- shadcn/ui `base-luma` style — primitives from `@base-ui/react` (not Radix). `components.json` sets `ui` → `@/components/shadcnui`
+- `next-themes` (default `dark`, `enableSystem={false}`), `react-toastify`, `lucide-react`, `date-fns`
+- `@t3-oss/env-nextjs` + Zod for env validation
+- Better Auth 1.6 (email/password, admin plugin with 4 roles)
+- Package manager: Bun (`bun.lock` committed; `node >=24`, `npm >=11` supported but scripts are Bun-first)
 
-Schemas in `src/lib/zodSchema.ts` — export both schema and `type X = z.infer<typeof xSchema>`.
+# Verification
 
-Components use `"use client"`, `react-hook-form` + `@hookform/resolvers/zod`, and shadcn primitives:
+- **Typecheck**: `bun typecheck` — `tsc --noEmit` (fast, use during iteration)
+- **Lint**: `bun lint` — ESLint with core-web-vitals + TypeScript rules
+- **Full prod**: `bun prod` — `prisma generate && eslint && next build && next start`
+- Pre-commit: none. Run `bun lint && bun typecheck` before PR.
+
+# Commands with quirks
+
+| Command         | What it does                                 | Gotcha                                                                                                                                                                           |
+| --------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun dev`       | `next dev` (Turbopack)                       |                                                                                                                                                                                  |
+| `bun migrate`   | `prisma migrate dev && prisma generate`      | Use this, not raw `prisma db push`. Prompts for migration name interactively.                                                                                                    |
+| `bun studio`    | `prisma studio --browser none`               | Headless — open the printed URL manually                                                                                                                                         |
+| `bun seed`      | `prisma db seed` (runs `tsx prisma/seed.ts`) | Seeds 4 users: admin@example.com, examiner@example.com, proctor@example.com, student@example.com (password = email). Admin email overridable via `BETTER_AUTH_SEED_ADMIN_EMAIL`. |
+| `bun add`       | Bun install                                  | Works, also `bunx` for one-off commands                                                                                                                                          |
+| `bun typecheck` | `tsc --noEmit`                               | Use instead of `next build` for routine TS checks                                                                                                                                |
+
+# Prisma
+
+- **No `datasource.url` in schema** — URL comes from `prisma.config.ts` via `env("DATABASE_URL")` (loaded with `dotenv/config`). Do not add it back inline.
+- Import: `import { PrismaClient } from "@generated/prisma/client"` — there is no `@prisma/client` import.
+- Singleton: `src/lib/database/dbClient.ts` — use this, never instantiate `PrismaClient` elsewhere.
+- Adapter: `PrismaLibSql` — used in both `dbClient.ts` and `prisma/seed.ts`.
+- Build fails without `prisma generate`. Scripts `build` and `prod` do it automatically; raw `next build` will fail.
+- `generated/` is gitignored and ESLint-ignored. Do not edit generated files.
+- Schema has 6 models: `User`, `Session`, `Account`, `Verification`, `Exam`, `Question`.
+
+# Env (T3)
+
+- `src/lib/env/serverEnv.ts` & `clientEnv.ts` — loaded as side effects in `next.config.ts`.
+- `experimental__runtimeEnv: process.env` in `serverEnv.ts` — keep the `experimental__` prefix verbatim.
+- `DATABASE_URL` must start with `file:./` (validated by Zod).
+- New vars: add to `serverEnv.ts` (server) or `clientEnv.ts` (must be `NEXT_PUBLIC_*`) and mirror in `.env.example`.
+
+# Auth (Better Auth)
+
+- Configured in `src/lib/auth.ts` (server) and `src/lib/auth-client.ts` (client).
+- 4 roles: `admin`, `examiner`, `proctor`, `student` (default). Custom resources: `exam` (create/read/update/delete/publish/assign), `result` (read/export/delete).
+- Role layouts (`admin/layout.tsx`, etc.) check `session.user.role` server-side and redirect mismatched users.
+- Login redirects client-side via `data.user.role` → `replace()` to the correct role route.
+- Permission check (server): `auth.api.userHasPermission({ body: { userId, permission: { exam: ["create"] } } })`
+- Permission check (client): `authClient.admin.hasPermission({ permission: { exam: ["create"] } })`
+- Password reset email is a `console.log` stub — not wired to real email.
+- Argon2 hashing in `src/lib/argon2.ts` — uses `BETTER_AUTH_SECRET` as secret key.
+
+# Route structure
+
+```
+(private)/                     # Auth gate (redirects unauthenticated to /)
+├── admin/                     # admin role only
+│   ├── page.tsx               # Dashboard (stub)
+│   ├── exams/
+│   │   ├── page.tsx           # List — built
+│   │   ├── new/page.tsx       # Create — built
+│   │   └── [id]/
+│   │       ├── page.tsx       # Detail/edit/questions — built
+│   │       ├── assign/        # stub
+│   │       └── results/       # stub
+│   ├── results/               # stub
+│   └── users/                 # stub
+├── examiner/                  # examiner role only
+│   └── exams/ mirrors admin   # built (list, create, detail)
+├── proctor/                   # proctor role only (all stubs)
+└── student/                   # student role only (all stubs)
+```
+
+`admin` and `examiner` exam CRUD pages are fully implemented. Everything else is a `<h1>` stub.
+
+# Exam CRUD conventions
+
+- Server actions live in `src/server/actions/exam.ts` — `"use server"`, each checks session + role ownership.
+- List page fetches via `getExams()` (returns exams + `_count.questions` + `createdBy.name`).
+- Create/Detail use `ExamForm` (`src/components/Exam/ExamForm.tsx`) — wrapped in `"use client"`, `react-hook-form` + `Controller` pattern.
+- Questions managed via `QuestionsManager` (`src/components/Exam/QuestionsManager.tsx`) — inline add/edit/delete with `questionFormSchema`.
+- `ExamsTable` (`src/components/Exam/ExamsTable.tsx`) — client component with delete/publish actions.
+- Dynamic `Link` hrefs with `typedRoutes: true` require `as Route` cast — `import type { Route } from "next"`.
+
+# Styling & formatting
+
+- Tailwind v4: all theme config in `globals.css` via `@theme` block and `@custom-variant`. Do not create `tailwind.config.ts`.
+- Prettier: `singleAttributePerLine: true`, `bracketSameLine: true`, `experimentalTernaries: true`, `prettier-plugin-tailwindcss`. Code is auto-formatted on save in most editors; match existing style.
+- shadcn `Input` from `@base-ui/react/input` has strict value types — `Controller` fields with `z.coerce.number()` need explicit `value={String(field.value ?? "")}` to avoid type error.
+
+# Zod schemas
+
+All in `src/lib/zodSchema.ts`. Export both schema and inferred type (`==`). Current schemas: `loginFormSchema`, `registerFormSchema`, `forgotPasswordSchema`, `resetPasswordSchema`, `examFormSchema`, `questionFormSchema`.
+
+# Form pattern (react-hook-form + shadcn)
 
 ```typescript
 const { handleSubmit, control, formState: { isSubmitting } } = useForm({
@@ -20,166 +113,31 @@ const { handleSubmit, control, formState: { isSubmitting } } = useForm({
   defaultValues: { ... },
   mode: "all",
 });
-```
 
-Each field goes through `Controller`:
-
-```typescript
 <Controller
   name="fieldName"
   control={control}
   render={({ field, fieldState }) => (
     <Field data-invalid={fieldState.invalid}>
       <FieldLabel htmlFor={field.name}>Label</FieldLabel>
-      <Input {...field} id={field.name} aria-invalid={fieldState.invalid} autoComplete="..." />
+      <Input {...field} id={field.name} aria-invalid={fieldState.invalid} />
       {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
     </Field>
   )}
 />
 ```
 
-Submit: `<form onSubmit={handleSubmit(handler)} noValidate>`. Button disabled while submitting with icon toggle.
+Form: `<form onSubmit={handleSubmit(handler)} noValidate>`. Submit button shows spinner while `isSubmitting`.
 
-See existing examples under `src/components/Auth/`.
-
-<!-- END:form-patterns -->
-
-## Agent behavior
-
-- **Ask questions.** When the request is ambiguous, when there are real implementation choices with tradeoffs, or before any non-obvious / destructive action, use the `question` tool to confirm. Prefer one short batched question over back-and-forth guessing.
-- **Remember new learning.** When you discover something non-obvious about this repo — a gotcha, a convention, a fix, a command that wasn't documented — add it back to this file (or a clearly-scoped section) so future sessions benefit. Keep entries concise and high-signal; delete stale ones.
-- **Use available skills and MCPs.** Before writing code for a task that matches a listed skill (e.g. `shadcn`, `prisma-*`, `next-*`, `better-auth-*`, `vercel-react-*`, `zod`, etc.), load it with the `skill` tool. And MCPs that are directly relevant to this stack e.g. **`shadcn`** (local; component registry / audit) and **`better-auth`** (remote; auth setup). Use them when the task fits instead of guessing from training data.
-
-## Stack at a glance
-
-- Next.js 16.2 + React 19.2 (App Router, Turbopack default, React Compiler on, `typedRoutes` on)
-- Prisma 7 with `@prisma/adapter-libsql` (SQLite, file-backed)
-- Tailwind CSS v4 (CSS-only config in `globals.css`; no `tailwind.config.ts`)
-- shadcn/ui with the `base-luma` style preset; primitives from `@base-ui/react` (not Radix)
-- `next-themes` (default `dark`, `enableSystem={false}`), `react-toastify`, `lucide-react`
-- `@t3-oss/env-nextjs` + Zod for env validation
-
-## Verification
-
-- **Lint**: `bun lint` — runs `eslint` with `eslint-config-next` core-web-vitals + typescript.
-- **TypeScript**: `bun typecheck` — `tsc --noEmit` (fast, use during iteration).
-- **Full prod check**: `bun prod` — `prisma generate && eslint && next build && next start`. Use before schema or env changes. Avoid running `bun run build` for routine TS checks — it's heavy; use `bun typecheck` instead.
-
-## Prisma (Prisma 7, custom output)
-
-- Generator: `provider = "prisma-client"`, `output = "../generated/prisma"`. This is the Prisma 7 generator, **not** `prisma-client-js`.
-- Import the client as `import { PrismaClient } from "@generated/prisma/client"`. There is no `@prisma/client` import surface in this repo.
-- `prisma/schema.prisma` has **no** `datasource.url` line. The URL comes from `prisma.config.ts` via `env("DATABASE_URL")` (loaded with `dotenv/config`). Do not add it back inline.
-- `src/lib/database/dbClient.ts` is a `globalThis` singleton (HMR-safe) wired to `PrismaLibSql`. Do not instantiate `PrismaClient` elsewhere; import from this file.
-- `serverEnv.DATABASE_URL` is Zod-validated to start with `file:./` (`src/lib/env/serverEnv.ts`). A non-`file:./` URL throws at boot.
-- No migrations exist yet — `bun migrate` (`prisma migrate dev && prisma generate`) creates `prisma/migrations/`. Schema edits go through that command, not `prisma db push`.
-- `bun studio` runs headless (`--browser none`); open the printed URL in a browser manually.
-- `generated/**` is gitignored and excluded from ESLint. Do not hand-edit generated files.
-- `build` and `prod` scripts prepend `prisma generate` — running raw `next build` will fail with missing types if the client is stale.
-
-## Env validation (T3 env)
-
-- `src/lib/env/clientEnv.ts` and `src/lib/env/serverEnv.ts` define Zod schemas via `@t3-oss/env-nextjs`.
-- `serverEnv.ts` uses `experimental__runtimeEnv: process.env`. The `experimental__` prefix is required for non-Next-runtime access — keep it verbatim.
-- `next.config.ts` imports both env files **as side effects** at the top of the module to trigger validation at load time. Do not remove those imports; the rest of the app reads `serverEnv` / `clientEnv` from those modules.
-- New vars: add to `serverEnv.ts` (server) or `clientEnv.ts` (must be `NEXT_PUBLIC_*`) and mirror in `.env.example`.
-
-## Styling
-
-- Tailwind v4: all config lives in `src/app/globals.css` via `@theme` and `@custom-variant`. PostCSS plugin is `@tailwindcss/postcss`. There is no `tailwind.config.ts` — do not create one.
-- `globals.css` imports `shadcn/tailwind.css`; removing it breaks the Base Luma design tokens.
-- Prettier: `singleAttributePerLine: true`, `bracketSameLine: true`, `experimentalTernaries: true`, and `prettier-plugin-tailwindcss` is enabled. New code matches (one prop per line; JSX closing bracket on the same line as the tag).
-
-## shadcn / Base UI
-
-- `components.json` sets `ui` → `@/components/shadcnui` (not the default `@/components/ui`). Add components with `bunx shadcn add ...`; they land in `src/components/shadcnui/`.
-- The shipped `Button` wraps `Button as ButtonPrimitive` from `@base-ui/react/button`. Do not introduce Radix or `react-aria` primitives — they don't share the Base Luma styling.
-
-## Path aliases (`tsconfig.json`)
+# Path aliases
 
 - `@/*` → `./src/*`
 - `@generated/*` → `./generated/*` (Prisma client only)
 
-## Admin plugin & roles
+# Misc
 
-- Admin plugin is configured in `src/lib/auth.ts` with custom access control from `src/lib/auth/permissions.ts`.
-- Four roles exist: `admin`, `examiner`, `proctor`, `student` (default role).
-- Custom resources: `exam` (create, read, update, delete, publish, assign) and `result` (read, export, delete). These extend Better Auth's default `user` / `session` statements.
-- Server-side: `auth.api.userHasPermission({ body: { userId, permission: { exam: ["create"] } } })`
-- Client-side: `authClient.admin.hasPermission({ permission: { exam: ["create"] } })`
-- Seed an admin: `bun prisma/seed.ts <email>`.
-- `prisma/seed.ts` uses `PrismaLibSql` adapter directly (same pattern as `dbClient.ts`). Loads env via `dotenv/config`.
-
-## Reserved directories
-
-- `src/server/` — server-only modules (server actions, anything importing `server-only`). Currently a `.gitkeep`.
-- `src/hooks/` — custom React hooks. Currently a `.gitkeep`.
-
-## Package manager
-
-- `bun.lock` is committed; Bun is the primary workflow (`bun install`, `bun <script>`). npm works (engines pin `node >=24`, `npm >=11`) but the scripts and README are written around `bun`.
-
-## Misc
-
-- ESLint ignores: `.next/**`, `out/**`, `build/**`, `next-env.d.ts`, `generated/**`.
-- `.env` is gitignored; `.env.example` is the committed template. Do not commit secrets.
-- `CHECKPOINT_DISABLE=1` is set to silence Prisma telemetry.
-- No CI workflows or pre-commit hooks exist. Pre-PR verification is `bun lint` then `bun run build` (see Verification above).
-
-## Route / Page structure
-
-All authenticated routes live under `(private)/` with role-based subdirectories:
-
-```
-(private)/
-├── admin/                        # Administrator only
-│   ├── page.tsx                  # /admin          — Dashboard
-│   ├── exams/
-│   │   ├── page.tsx              # /admin/exams        — List all exams
-│   │   ├── new/page.tsx          # /admin/exams/new    — Create exam
-│   │   └── [id]/
-│   │       ├── page.tsx          # /admin/exams/[id]   — View/edit exam
-│   │       ├── assign/page.tsx   # /admin/exams/[id]/assign
-│   │       └── results/page.tsx  # /admin/exams/[id]/results
-│   ├── results/page.tsx          # /admin/results
-│   └── users/page.tsx            # /admin/users
-├── examiner/                     # Examiner only
-│   ├── page.tsx                  # /examiner           — Dashboard
-│   ├── exams/
-│   │   ├── page.tsx              # /examiner/exams
-│   │   ├── new/page.tsx          # /examiner/exams/new
-│   │   └── [id]/
-│   │       ├── page.tsx          # /examiner/exams/[id]
-│   │       ├── assign/page.tsx   # /examiner/exams/[id]/assign
-│   │       └── results/page.tsx  # /examiner/exams/[id]/results
-│   └── results/page.tsx          # /examiner/results
-├── proctor/                      # Proctor only
-│   ├── page.tsx                  # /proctor            — Dashboard
-│   └── exams/
-│       ├── page.tsx              # /proctor/exams
-│       └── [id]/page.tsx         # /proctor/exams/[id]
-└── student/                      # Student only
-    ├── page.tsx                  # /student            — Dashboard
-    ├── exams/
-    │   ├── page.tsx              # /student/exams
-    │   └── [id]/page.tsx         # /student/exams/[id]
-    └── results/
-        ├── page.tsx              # /student/results
-        └── [id]/page.tsx         # /student/results/[id]
-```
-
-Role layouts (`admin/layout.tsx`, `examiner/layout.tsx`, etc.) check `session.user.role` server-side and redirect mismatched users to their correct section. The parent `(private)/layout.tsx` handles the global auth gate.
-
-Login redirect: `LoginForm.tsx` reads `data.user.role` from the signIn response and redirects client-side via `replace()` to the correct role route.
-
-Note: `.next/types/link.d.ts` is auto-generated by `next build`. Run `next build` after adding new routes to keep route types in sync (required for `typedRoutes: true`).
-
-## Git commits
-
-Use PowerShell here-strings:
-
-```powershell
-git commit -m @"
-commit message here
-"@
-```
+- `src/server/` — server-only modules (server actions, `import "server-only"`).
+- `src/hooks/` — custom React hooks.
+- Git on Windows: use PowerShell here-strings for commits.
+- `.next/types/link.d.ts` is auto-generated by `next build`. Run `next build` after adding new routes to keep typed routes in sync.
+- No CI, no pre-commit hooks.

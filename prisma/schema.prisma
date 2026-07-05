@@ -22,6 +22,7 @@ model User {
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
+  exams         Exam[]    @relation("CreatedExams")
 
   @@unique([email])
   @@map("user")
@@ -75,4 +76,40 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+model Exam {
+  id          String     @id @default(uuid())
+  title       String
+  description String?
+  duration    Int
+  startTime   DateTime?
+  endTime     DateTime?
+  status      String     @default("draft")
+  createdById String
+  createdBy   User       @relation("CreatedExams", fields: [createdById], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  questions  Question[]
+
+  @@index([createdById])
+  @@map("exam")
+}
+
+model Question {
+  id        String   @id @default(uuid())
+  examId    String
+  exam      Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  text      String
+  type      String   @default("multiple_choice")
+  options   String?
+  answer    String?
+  points    Int      @default(1)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([examId])
+  @@map("question")
 }

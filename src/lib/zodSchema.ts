@@ -65,3 +65,49 @@ export const resetPasswordSchema = z
   });
 
 export type ResetPasswordFormType = z.infer<typeof resetPasswordSchema>;
+
+export const examFormSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(1, { error: "Title is required" })
+    .max(200, { error: "Title must not exceed 200 characters" }),
+  description: z
+    .string()
+    .trim()
+    .max(2000, { error: "Description must not exceed 2000 characters" })
+    .optional()
+    .or(z.literal("")),
+  duration: z.coerce
+    .number({ error: "Duration must be a number" })
+    .int({ error: "Duration must be a whole number" })
+    .min(1, { error: "Duration must be at least 1 minute" })
+    .max(1440, { error: "Duration must not exceed 1440 minutes" }),
+  startTime: z.string().optional().or(z.literal("")),
+  endTime: z.string().optional().or(z.literal("")),
+});
+
+export type ExamFormType = z.infer<typeof examFormSchema>;
+
+export const questionFormSchema = z.object({
+  text: z
+    .string()
+    .trim()
+    .min(1, { error: "Question text is required" })
+    .max(1000, { error: "Question text must not exceed 1000 characters" }),
+  type: z.enum(
+    ["multiple_choice", "single_choice", "true_false", "short_answer"],
+    {
+      error: "Please select a question type",
+    },
+  ),
+  options: z.string().optional().or(z.literal("")),
+  answer: z.string().optional().or(z.literal("")),
+  points: z.coerce
+    .number({ error: "Points must be a number" })
+    .int({ error: "Points must be a whole number" })
+    .min(0, { error: "Points must be at least 0" })
+    .max(999, { error: "Points must not exceed 999" }),
+});
+
+export type QuestionFormType = z.infer<typeof questionFormSchema>;

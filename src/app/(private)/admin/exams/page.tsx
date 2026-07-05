@@ -1,14 +1,32 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { PlusIcon } from "lucide-react";
+import { Button } from "@/components/shadcnui/button";
+import ExamsTable from "@/components/Exam/ExamsTable";
+import { getExams } from "@/server/actions/exam";
 
 export const metadata: Metadata = {
   title: "Exams",
   description: "Manage all exams",
 };
 
-const AdminExamsPage = () => {
+const AdminExamsPage = async () => {
+  const exams = await getExams();
+
   return (
-    <section>
-      <h1 className="text-2xl font-medium">All Exams</h1>
+    <section className="grid gap-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-medium">All Exams</h1>
+        <Link href="/admin/exams/new">
+          <Button>
+            <PlusIcon className="size-4" /> Create Exam
+          </Button>
+        </Link>
+      </div>
+      <ExamsTable
+        exams={exams}
+        basePath="/admin"
+      />
     </section>
   );
 };
