@@ -124,6 +124,8 @@ export const deleteExam = async (id: string) => {
   if (session.user.role !== "admin" && exam.createdById !== session.user.id)
     return;
 
+  if (session.user.role !== "admin" && exam.status === "published") return;
+
   await prisma.exam.delete({ where: { id } });
 
   const basePath = session.user.role === "admin" ? "/admin" : "/examiner";

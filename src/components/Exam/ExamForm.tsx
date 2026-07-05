@@ -7,6 +7,7 @@ import { Controller, useForm } from "react-hook-form";
 import { Button } from "../shadcnui/button";
 import { Field, FieldError, FieldLabel } from "../shadcnui/field";
 import { Input } from "../shadcnui/input";
+import { Textarea } from "../shadcnui/textarea";
 
 type ExamFormProps = {
   action: (formData: FormData) => Promise<void>;
@@ -73,13 +74,12 @@ const ExamForm = ({
         render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
             <FieldLabel htmlFor={field.name}>Description</FieldLabel>
-            <textarea
+            <Textarea
               {...field}
               id={field.name}
-              rows={4}
               placeholder="Enter exam description (optional)"
               aria-invalid={fieldState.invalid}
-              className="bg-input/50 placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/30 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 h-24 w-full min-w-0 resize-y rounded-3xl border border-transparent px-3 py-2 text-base transition-[color,box-shadow,background-color] outline-none focus-visible:ring-3 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:ring-3 md:text-sm"
+              className="h-24"
             />
             {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
           </Field>

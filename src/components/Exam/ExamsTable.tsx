@@ -28,8 +28,14 @@ const ExamsTable = ({ exams, basePath }: ExamsTableProps) => {
   const { refresh } = useRouter();
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this exam?")) return;
+  const isAdmin = basePath === "/admin";
+
+  const handleDelete = async (id: string, status: string) => {
+    const msg =
+      status === "published" ?
+        "This exam is published and assigned students may be affected. Are you sure you want to permanently delete it?"
+      : "Are you sure you want to delete this exam?";
+    if (!confirm(msg)) return;
     setLoadingId(id);
     await deleteExam(id);
     toast.success("Exam deleted");
@@ -100,8 +106,8 @@ const ExamsTable = ({ exams, basePath }: ExamsTableProps) => {
                 <div className="flex items-center justify-end gap-1">
                   <Link href={`${basePath}/exams/${exam.id}` as Route}>
                     <Button
-                      variant="ghost"
-                      size="icon-sm">
+                      variant="outline"
+                      size="icon-lg">
                       {loadingId === exam.id ?
                         <Loader2Icon className="size-4 animate-spin" />
                       : <EyeIcon className="size-4" />}
@@ -111,26 +117,28 @@ const ExamsTable = ({ exams, basePath }: ExamsTableProps) => {
                     <>
                       <Link href={`${basePath}/exams/${exam.id}` as Route}>
                         <Button
-                          variant="ghost"
-                          size="icon-sm">
+                          variant="outline"
+                          size="icon-lg">
                           <EditIcon className="size-4" />
                         </Button>
                       </Link>
                       <Button
-                        variant="ghost"
-                        size="icon-sm"
+                        variant="outline"
+                        size="icon-lg"
                         onClick={() => handlePublish(exam.id)}
                         disabled={loadingId === exam.id}>
                         Publish
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => handleDelete(exam.id)}
-                        disabled={loadingId === exam.id}>
-                        <Trash2Icon className="text-destructive size-4" />
-                      </Button>
                     </>
+                  )}
+                  {(exam.status === "draft" || isAdmin) && (
+                    <Button
+                      variant="outline"
+                      size="icon-lg"
+                      onClick={() => handleDelete(exam.id, exam.status)}
+                      disabled={loadingId === exam.id}>
+                      <Trash2Icon className="text-destructive size-4" />
+                    </Button>
                   )}
                 </div>
               </td>

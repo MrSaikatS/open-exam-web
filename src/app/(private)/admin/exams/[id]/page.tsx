@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { format } from "date-fns";
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeftIcon, UsersIcon } from "lucide-react";
 import ExamForm from "@/components/Exam/ExamForm";
 import QuestionsManager from "@/components/Exam/QuestionsManager";
 import { Button } from "@/components/shadcnui/button";
@@ -62,7 +62,7 @@ const AdminExamDetailPage = async ({
         <div className="grid gap-4">
           <h2 className="text-lg font-medium">Edit Exam</h2>
           <ExamForm
-            action={async (fd) => updateExam(id, fd)}
+            action={updateExam.bind(null, id)}
             defaultValues={{
               title: exam.title,
               description: exam.description ?? "",
@@ -74,6 +74,16 @@ const AdminExamDetailPage = async ({
           />
         </div>
       )}
+
+      <div className="border-border flex gap-2 border-t pt-8">
+        <Link href={`/admin/exams/${id}/assign`}>
+          <Button
+            variant="outline"
+            size="sm">
+            <UsersIcon className="size-4" /> Assign
+          </Button>
+        </Link>
+      </div>
 
       <div className="border-border border-t pt-8">
         <QuestionsManager

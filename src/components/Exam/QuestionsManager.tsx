@@ -201,7 +201,7 @@ const QuestionForm = ({
         <Button
           type="submit"
           disabled={isSubmitting || !isValid}
-          size="sm">
+          size="lg">
           {isSubmitting ?
             <Loader2Icon className="size-4 animate-spin" />
           : initial ?
@@ -211,8 +211,8 @@ const QuestionForm = ({
         {initial && (
           <Button
             type="button"
-            variant="ghost"
-            size="sm"
+            variant="outline"
+            size="lg"
             onClick={onDone}>
             <XIcon className="size-4" /> Cancel
           </Button>
@@ -250,7 +250,7 @@ const QuestionsManager = ({ examId, questions }: QuestionsManagerProps) => {
         {!showForm && !editingId && (
           <Button
             variant="outline"
-            size="sm"
+            size="lg"
             onClick={() => setShowForm(true)}>
             <PlusIcon className="size-4" /> Add Question
           </Button>
@@ -295,13 +295,13 @@ const QuestionsManager = ({ examId, questions }: QuestionsManagerProps) => {
               </div>
               <div className="flex shrink-0 gap-1">
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="icon-xs"
                   onClick={() => setEditingId(q.id)}>
                   <PencilIcon className="size-3" />
                 </Button>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="icon-xs"
                   onClick={() => handleDelete(q.id)}
                   disabled={loadingDelete === q.id}>

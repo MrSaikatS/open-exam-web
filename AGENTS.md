@@ -26,7 +26,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 # Commands with quirks
 
-| Command         | What it does                                 | Gotcha                                                                                                                                                                           |
+| Command         | What it does                                 | Quirk                                                                                                                                                                            |
 | --------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `bun dev`       | `next dev` (Turbopack)                       |                                                                                                                                                                                  |
 | `bun migrate`   | `prisma migrate dev && prisma generate`      | Use this, not raw `prisma db push`. Prompts for migration name interactively.                                                                                                    |
@@ -43,7 +43,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Adapter: `PrismaLibSql` — used in both `dbClient.ts` and `prisma/seed.ts`.
 - Build fails without `prisma generate`. Scripts `build` and `prod` do it automatically; raw `next build` will fail.
 - `generated/` is gitignored and ESLint-ignored. Do not edit generated files.
-- Schema has 6 models: `User`, `Session`, `Account`, `Verification`, `Exam`, `Question`.
+- Schema has 7 models: `User`, `Session`, `Account`, `Verification`, `Exam`, `ExamAssignment`, `Question`.
 
 # Env (T3)
 
@@ -74,7 +74,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 │   │   ├── new/page.tsx       # Create — built
 │   │   └── [id]/
 │   │       ├── page.tsx       # Detail/edit/questions — built
-│   │       ├── assign/        # stub
+│   │       ├── assign/        # built
 │   │       └── results/       # stub
 │   ├── results/               # stub
 │   └── users/                 # stub
@@ -84,7 +84,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 └── student/                   # student role only (all stubs)
 ```
 
-`admin` and `examiner` exam CRUD pages are fully implemented. Everything else is a `<h1>` stub.
+`admin` and `examiner` exam CRUD pages and exam assignment are fully implemented. Everything else is a `<h1>` stub.
 
 # Exam CRUD conventions
 
@@ -94,12 +94,28 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Questions managed via `QuestionsManager` (`src/components/Exam/QuestionsManager.tsx`) — inline add/edit/delete with `questionFormSchema`.
 - `ExamsTable` (`src/components/Exam/ExamsTable.tsx`) — client component with delete/publish actions.
 - Dynamic `Link` hrefs with `typedRoutes: true` require `as Route` cast — `import type { Route } from "next"`.
+- Assign pages live in `src/app/(private)/{role}/exams/[id]/assign/page.tsx`. Uses `AssignStudents` component.
+- Exam lifecycle: examiners cannot delete published exams (server-side guard in `deleteExam`). Admins can delete any exam with a confirmation warning. Delete button conditionally shown in `ExamsTable`.
+
+# Server action binding
+
+- Passing a server action with arguments to a Client Component: use `.bind(null, ...args)` — e.g. `action={updateExam.bind(null, id)}`.
+- Inline anonymous functions like `action={async (fd) => updateExam(id, fd)}` cannot be serialized across the server/client boundary.
+
+# Server actions by file
+
+| File                               | Actions                                                                                                                               |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/server/actions/exam.ts`       | `getExams`, `getExamById`, `createExam`, `updateExam`, `deleteExam`, `publishExam`, `addQuestion`, `updateQuestion`, `deleteQuestion` |
+| `src/server/actions/assignment.ts` | `assignExam`, `unassignExam`, `getAssignedStudents`, `getAvailableStudents`                                                           |
 
 # Styling & formatting
 
 - Tailwind v4: all theme config in `globals.css` via `@theme` block and `@custom-variant`. Do not create `tailwind.config.ts`.
 - Prettier: `singleAttributePerLine: true`, `bracketSameLine: true`, `experimentalTernaries: true`, `prettier-plugin-tailwindcss`. Code is auto-formatted on save in most editors; match existing style.
 - shadcn `Input` from `@base-ui/react/input` has strict value types — `Controller` fields with `z.coerce.number()` need explicit `value={String(field.value ?? "")}` to avoid type error.
+- Prefer `variant="outline"` over `variant="ghost"` on Buttons — ghost variant is not used in this project.
+- Prefer larger button sizes: `size="lg"` over `size="sm"`, and `size="icon-lg"` over `size="icon-sm"`.
 
 # Zod schemas
 
