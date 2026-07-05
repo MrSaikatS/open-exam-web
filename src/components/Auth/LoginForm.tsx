@@ -35,7 +35,7 @@ const LoginForm = () => {
     password,
     rememberMe,
   }: LoginFormType) => {
-    const { error } = await authClient.signIn.email({
+    const { data, error } = await authClient.signIn.email({
       email,
       password,
       rememberMe,
@@ -46,9 +46,15 @@ const LoginForm = () => {
       return;
     }
 
+    const role = data?.user?.role;
+
     toast.success("Welcome back!");
     reset();
-    replace("/dashboard");
+
+    if (role === "administrator") replace("/admin");
+    else if (role === "examiner") replace("/examiner");
+    else if (role === "proctor") replace("/proctor");
+    else replace("/student");
   };
 
   return (

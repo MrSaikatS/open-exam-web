@@ -46,9 +46,9 @@ const RegisterForm = () => {
       return;
     }
 
-    toast.success("Account created successfully!");
+    toast.success("Account created successfully! Please sign in.");
     reset();
-    replace("/dashboard");
+    replace("/");
   };
 
   return (
