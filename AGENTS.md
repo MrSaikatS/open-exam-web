@@ -100,6 +100,16 @@ See existing examples under `src/components/Auth/`.
 - `@/*` → `./src/*`
 - `@generated/*` → `./generated/*` (Prisma client only)
 
+## Admin plugin & roles
+
+- Admin plugin is configured in `src/lib/auth.ts` with custom access control from `src/lib/auth/permissions.ts`.
+- Four roles exist: `administrator`, `examiner`, `proctor`, `student` (default role).
+- Custom resources: `exam` (create, read, update, delete, publish, assign) and `result` (read, export, delete). These extend Better Auth's default `user` / `session` statements.
+- Server-side: `auth.api.userHasPermission({ body: { userId, permission: { exam: ["create"] } } })`
+- Client-side: `authClient.admin.hasPermission({ permission: { exam: ["create"] } })`
+- Seed an admin: `bun prisma/seed.ts <email>`.
+- `prisma/seed.ts` uses `PrismaLibSql` adapter directly (same pattern as `dbClient.ts`). Loads env via `dotenv/config`.
+
 ## Reserved directories
 
 - `src/server/` — server-only modules (server actions, anything importing `server-only`). Currently a `.gitkeep`.

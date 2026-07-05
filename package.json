@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "prod": "prisma generate && next build && next start",
     "migrate": "prisma migrate dev && prisma generate",
-    "studio": "prisma studio --browser none"
+    "studio": "prisma studio --browser none",
+    "seed": "prisma db seed"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
@@ -30,7 +31,7 @@
     "next-themes": "^0.4.6",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "react-hook-form": "^7.80.0",
+    "react-hook-form": "^7.81.0",
     "react-toastify": "^11.1.0",
     "sharp": "^0.34.5",
     "tailwind-merge": "^3.6.0",
@@ -50,6 +51,7 @@
     "prisma": "^7.8.0",
     "shadcn": "^4.13.0",
     "tailwindcss": "^4.3.2",
+    "tsx": "^4.23.0",
     "tw-animate-css": "^1.4.0",
     "typescript": "^5.9.3"
   },

@@ -1,7 +1,15 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import { admin } from "better-auth/plugins";
 import { nextCookies } from "better-auth/next-js";
 import { hashPasswordFunction, verifyPasswordFunction } from "./argon2";
+import {
+  ac,
+  administrator,
+  examiner,
+  proctor,
+  student,
+} from "./auth/permissions";
 import prisma from "./database/dbClient";
 import { serverEnv } from "./env/serverEnv";
 
@@ -16,7 +24,19 @@ export const auth = betterAuth({
     provider: "sqlite",
   }),
 
-  plugins: [nextCookies()],
+  plugins: [
+    admin({
+      ac,
+      defaultRole: "student",
+      roles: {
+        administrator,
+        examiner,
+        proctor,
+        student,
+      },
+    }),
+    nextCookies(),
+  ],
 
   emailAndPassword: {
     enabled: true,
