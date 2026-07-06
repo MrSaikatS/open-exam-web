@@ -70,10 +70,12 @@ export const ExamPlayer = ({
   const submittingRef = useRef(false);
   const answersRef = useRef(answers);
   const currentQuestionRef = useRef(questions[currentIndex]);
+  const currentQuestionIdRef = useRef(questions[currentIndex]?.id);
 
   useEffect(() => {
     answersRef.current = answers;
     currentQuestionRef.current = questions[currentIndex];
+    currentQuestionIdRef.current = questions[currentIndex]?.id;
   });
 
   const currentQuestion = questions[currentIndex];
@@ -213,10 +215,14 @@ export const ExamPlayer = ({
 
       {currentQuestion && (
         <QuestionCard
+          key={currentQuestion.id}
           question={currentQuestion}
           value={answers[currentQuestion.id] ?? ""}
           onChange={(val: string) =>
-            setAnswers((prev) => ({ ...prev, [currentQuestion.id]: val }))
+            setAnswers((prev) => ({
+              ...prev,
+              [currentQuestionIdRef.current]: val,
+            }))
           }
         />
       )}
