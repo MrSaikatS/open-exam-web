@@ -88,10 +88,14 @@ const UsersTable = ({ initialUsers, initialTotal }: UsersTableProps) => {
     )
       return;
     setLoadingId(userId);
-    await deleteUser(userId);
-    toast.success("User deleted");
-    refresh();
-    fetchUsers(search, offset);
+    try {
+      await deleteUser(userId);
+      toast.success("User deleted");
+      refresh();
+      fetchUsers(search, offset);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to delete user");
+    }
     setLoadingId(null);
   };
 
@@ -100,28 +104,36 @@ const UsersTable = ({ initialUsers, initialTotal }: UsersTableProps) => {
     role: "admin" | "examiner" | "proctor" | "student",
   ) => {
     setLoadingId(userId);
-    await setUserRole(userId, role);
-    toast.success("Role updated");
-    refresh();
-    fetchUsers(search, offset);
+    try {
+      await setUserRole(userId, role);
+      toast.success("Role updated");
+      refresh();
+      fetchUsers(search, offset);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update role");
+    }
     setLoadingId(null);
   };
 
   const handleBanToggle = async (user: UserRow) => {
     setLoadingId(user.id);
-    if (user.banned) {
-      await unbanUser(user.id);
-      toast.success("User unbanned");
-    } else {
-      if (!confirm(`Ban ${user.name}? They will be unable to sign in.`)) {
-        setLoadingId(null);
-        return;
+    try {
+      if (user.banned) {
+        await unbanUser(user.id);
+        toast.success("User unbanned");
+      } else {
+        if (!confirm(`Ban ${user.name}? They will be unable to sign in.`)) {
+          setLoadingId(null);
+          return;
+        }
+        await banUser(user.id);
+        toast.success("User banned");
       }
-      await banUser(user.id);
-      toast.success("User banned");
+      refresh();
+      fetchUsers(search, offset);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update user");
     }
-    refresh();
-    fetchUsers(search, offset);
     setLoadingId(null);
   };
 

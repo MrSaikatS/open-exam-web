@@ -2,51 +2,13 @@ import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { ArrowLeftIcon, BarChart3Icon } from "lucide-react";
 import { Button } from "@/components/shadcnui/button";
+import { StatusBadge } from "@/components/Results/StatusBadge";
+import { PctBadge } from "@/components/Results/PctBadge";
 import { getExamResults } from "@/server/actions/results";
 
 export const metadata: Metadata = {
   title: "Exam Results",
   description: "View exam results",
-};
-
-const statusBadge = (status: string) => {
-  const map: Record<string, { label: string; className: string }> = {
-    submitted: {
-      label: "Submitted",
-      className:
-        "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-    },
-    graded: {
-      label: "Graded",
-      className:
-        "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-    },
-  };
-  const s = map[status] ?? {
-    label: status,
-    className: "bg-muted text-muted-foreground",
-  };
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${s.className}`}>
-      {s.label}
-    </span>
-  );
-};
-
-const pctBadge = (pct: number) => {
-  const className =
-    pct >= 80 ?
-      "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-    : pct >= 50 ?
-      "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-    : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${className}`}>
-      {pct}%
-    </span>
-  );
 };
 
 const AdminExamResultsPage = async ({
@@ -142,8 +104,10 @@ const AdminExamResultsPage = async ({
                     <td className="px-4 py-3 font-medium tabular-nums">
                       {score}/{attempt.maxScore}
                     </td>
-                    <td className="px-4 py-3">{pctBadge(pct)}</td>
-                    <td className="px-4 py-3">{statusBadge(attempt.status)}</td>
+                    <td className="px-4 py-3">{<PctBadge pct={pct} />}</td>
+                    <td className="px-4 py-3">
+                      {<StatusBadge status={attempt.status} />}
+                    </td>
                     <td className="text-muted-foreground px-4 py-3">
                       {attempt.submittedAt ?
                         new Date(attempt.submittedAt).toLocaleDateString()

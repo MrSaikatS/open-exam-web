@@ -47,36 +47,44 @@ const AssignStudents = ({
   const handleAssign = async () => {
     if (selected.size === 0) return;
     setLoading(true);
-    await assignExam(examId, Array.from(selected));
-    const added = available.filter((s) => selected.has(s.id));
-    setAssignments((prev) => [
-      ...added.map((s) => ({
-        id: "",
-        userId: s.id,
-        user: s,
-        assignedAt: new Date(),
-      })),
-      ...prev,
-    ]);
-    setAvailable((prev) => prev.filter((s) => !selected.has(s.id)));
-    setSelected(new Set());
+    try {
+      await assignExam(examId, Array.from(selected));
+      const added = available.filter((s) => selected.has(s.id));
+      setAssignments((prev) => [
+        ...added.map((s) => ({
+          id: "",
+          userId: s.id,
+          user: s,
+          assignedAt: new Date(),
+        })),
+        ...prev,
+      ]);
+      setAvailable((prev) => prev.filter((s) => !selected.has(s.id)));
+      setSelected(new Set());
+      toast.success(`${added.length} student(s) assigned`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to assign students");
+    }
     setLoading(false);
-    toast.success(`${added.length} student(s) assigned`);
   };
 
   const handleUnassign = async (userId: string) => {
     if (!confirm("Remove this student from the exam?")) return;
     setRemoving(userId);
-    await unassignExam(examId, userId);
-    const removed = assignments.find((a) => a.userId === userId);
-    if (removed) {
-      setAvailable((prev) =>
-        [...prev, removed.user].sort((a, b) => a.name.localeCompare(b.name)),
-      );
+    try {
+      await unassignExam(examId, userId);
+      const removed = assignments.find((a) => a.userId === userId);
+      if (removed) {
+        setAvailable((prev) =>
+          [...prev, removed.user].sort((a, b) => a.name.localeCompare(b.name)),
+        );
+      }
+      setAssignments((prev) => prev.filter((a) => a.userId !== userId));
+      toast.success("Student removed");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to remove student");
     }
-    setAssignments((prev) => prev.filter((a) => a.userId !== userId));
     setRemoving(null);
-    toast.success("Student removed");
   };
 
   return (

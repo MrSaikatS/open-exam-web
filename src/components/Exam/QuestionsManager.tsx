@@ -91,10 +91,14 @@ const EditQuestionForm = ({
     fd.set("answer", data.answer ?? "");
     fd.set("points", String(data.points));
 
-    await updateQuestion(question.id, fd);
-    toast.success("Question updated");
-    reset();
-    onDone();
+    try {
+      await updateQuestion(question.id, fd);
+      toast.success("Question updated");
+      reset();
+      onDone();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update question");
+    }
   };
 
   return (
@@ -262,10 +266,16 @@ const ImportBankDialog = ({ examId }: { examId: string }) => {
   const handleImport = async () => {
     if (selected.size === 0) return;
     setLoading(true);
-    await importBankQuestions(examId, Array.from(selected));
-    toast.success(`${selected.size} question(s) imported`);
+    try {
+      await importBankQuestions(examId, Array.from(selected));
+      toast.success(`${selected.size} question(s) imported`);
+      setOpen(false);
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Failed to import questions",
+      );
+    }
     setLoading(false);
-    setOpen(false);
   };
 
   const filtered = bankQuestions.filter((q) =>
@@ -362,10 +372,13 @@ const QuestionsManager = ({ examId, questions }: QuestionsManagerProps) => {
   const [loadingDelete, setLoadingDelete] = useState<string | null>(null);
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this question?")) return;
     setLoadingDelete(id);
-    await deleteQuestion(id);
-    toast.success("Question deleted");
+    try {
+      await deleteQuestion(id);
+      toast.success("Question deleted");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to delete question");
+    }
     setLoadingDelete(null);
   };
 

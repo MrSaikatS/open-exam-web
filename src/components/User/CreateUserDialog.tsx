@@ -52,11 +52,15 @@ const CreateUserDialog = () => {
     fd.set("email", data.email);
     fd.set("password", data.password);
     fd.set("role", data.role);
-    await createUser(fd);
-    toast.success("User created");
-    refresh();
-    reset();
-    setOpen(false);
+    try {
+      await createUser(fd);
+      toast.success("User created");
+      refresh();
+      reset();
+      setOpen(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to create user");
+    }
   };
 
   return (

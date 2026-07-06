@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { auth } from "@/lib/auth";
 import { LayoutProps } from "@/lib/types";
 import { headers } from "next/headers";
@@ -5,7 +6,13 @@ import { redirect } from "next/navigation";
 import { SidebarLayout } from "@/components/Sidebar/SidebarLayout";
 import { studentNav } from "@/components/Sidebar/nav-config";
 
-const StudentLayout = async ({ children }: LayoutProps) => {
+const StudentLayout = ({ children }: LayoutProps) => (
+  <Suspense fallback={null}>
+    <StudentGate>{children}</StudentGate>
+  </Suspense>
+);
+
+const StudentGate = async ({ children }: LayoutProps) => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });

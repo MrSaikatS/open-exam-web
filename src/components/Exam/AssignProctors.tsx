@@ -47,36 +47,46 @@ const AssignProctors = ({
   const handleAssign = async () => {
     if (selected.size === 0) return;
     setLoading(true);
-    await assignProctor(examId, Array.from(selected));
-    const added = available.filter((p) => selected.has(p.id));
-    setAssignments((prev) => [
-      ...added.map((p) => ({
-        id: "",
-        proctorId: p.id,
-        proctor: p,
-        assignedAt: new Date(),
-      })),
-      ...prev,
-    ]);
-    setAvailable((prev) => prev.filter((p) => !selected.has(p.id)));
-    setSelected(new Set());
+    try {
+      await assignProctor(examId, Array.from(selected));
+      const added = available.filter((p) => selected.has(p.id));
+      setAssignments((prev) => [
+        ...added.map((p) => ({
+          id: "",
+          proctorId: p.id,
+          proctor: p,
+          assignedAt: new Date(),
+        })),
+        ...prev,
+      ]);
+      setAvailable((prev) => prev.filter((p) => !selected.has(p.id)));
+      setSelected(new Set());
+      toast.success(`${added.length} proctor(s) assigned`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to assign proctors");
+    }
     setLoading(false);
-    toast.success(`${added.length} proctor(s) assigned`);
   };
 
   const handleUnassign = async (proctorId: string) => {
     if (!confirm("Remove this proctor from the exam?")) return;
     setRemoving(proctorId);
-    await unassignProctor(examId, proctorId);
-    const removed = assignments.find((a) => a.proctorId === proctorId);
-    if (removed) {
-      setAvailable((prev) =>
-        [...prev, removed.proctor].sort((a, b) => a.name.localeCompare(b.name)),
-      );
+    try {
+      await unassignProctor(examId, proctorId);
+      const removed = assignments.find((a) => a.proctorId === proctorId);
+      if (removed) {
+        setAvailable((prev) =>
+          [...prev, removed.proctor].sort((a, b) =>
+            a.name.localeCompare(b.name),
+          ),
+        );
+      }
+      setAssignments((prev) => prev.filter((a) => a.proctorId !== proctorId));
+      toast.success("Proctor removed");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to remove proctor");
     }
-    setAssignments((prev) => prev.filter((a) => a.proctorId !== proctorId));
     setRemoving(null);
-    toast.success("Proctor removed");
   };
 
   return (

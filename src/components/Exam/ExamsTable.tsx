@@ -42,17 +42,25 @@ const ExamsTable = ({ exams, basePath }: ExamsTableProps) => {
 
   const handleDelete = async (id: string) => {
     setLoadingId(id);
-    await deleteExam(id);
-    toast.success("Exam deleted");
-    refresh();
+    try {
+      await deleteExam(id);
+      toast.success("Exam deleted");
+      refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to delete exam");
+    }
     setLoadingId(null);
   };
 
   const handlePublish = async (id: string) => {
     setLoadingId(id);
-    await publishExam(id);
-    toast.success("Exam published");
-    refresh();
+    try {
+      await publishExam(id);
+      toast.success("Exam published");
+      refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to publish exam");
+    }
     setLoadingId(null);
   };
 

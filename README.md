@@ -155,9 +155,12 @@ src/
 │       ├── proctor/        # Proctor dashboard (exam monitoring)
 │       └── student/        # Student dashboard, exams (take), results
 ├── components/
+│   ├── Dashboard/          # StatCard, DashboardShellSkeleton
+│   ├── Examiner/           # ExaminerShellSkeleton
 │   ├── Exam/               # ExamForm, ExamsTable, QuestionsManager
 │   ├── Proctor/            # ProctorExamMonitor (live polling)
-│   ├── Student/            # ExamPlayer, QuestionCard, ResultReview
+│   ├── Results/            # StatusBadge, PctBadge
+│   ├── Student/            # ExamPlayer, QuestionCard, ResultReview, ExamStatusBadge, AttemptBadge
 │   └── shadcnui/           # shadcn/ui primitives
 ├── hooks/                  # Custom React hooks
 ├── lib/

@@ -23,9 +23,13 @@ const DeleteBankQuestionButton = ({ id }: { id: string }) => {
 
   const handleDelete = async () => {
     setLoading(true);
-    await deleteBankQuestion(id);
-    toast.success("Question deleted");
-    refresh();
+    try {
+      await deleteBankQuestion(id);
+      toast.success("Question deleted");
+      refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to delete question");
+    }
     setLoading(false);
   };
 

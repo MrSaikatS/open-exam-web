@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ClockIcon, UsersIcon } from "lucide-react";
+import { toast } from "react-toastify";
 import { Badge } from "@/components/shadcnui/badge";
 import { Card } from "@/components/shadcnui/card";
 import { getExamProgress } from "@/server/actions/proctor";
@@ -48,7 +49,7 @@ export const ProctorExamMonitor = ({
         allSubmittedRef.current = true;
       }
     } catch {
-      // Silently ignore polling errors to avoid disruption
+      toast.error("Failed to fetch exam progress");
     }
   }, [examId]);
 

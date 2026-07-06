@@ -11,32 +11,7 @@ import {
 } from "@/components/shadcnui/card";
 import { Button } from "@/components/shadcnui/button";
 import { EyeIcon } from "lucide-react";
-import { Badge } from "@/components/shadcnui/badge";
-
-export const metadata: Metadata = {
-  title: "My Results",
-  description: "View your results",
-};
-
-const statusBadge = (status: string) => {
-  const map: Record<string, { label: string; className: string }> = {
-    submitted: {
-      label: "Submitted",
-      className:
-        "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-    },
-    graded: {
-      label: "Graded",
-      className:
-        "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-    },
-  };
-  const s = map[status] ?? {
-    label: status,
-    className: "bg-muted text-muted-foreground",
-  };
-  return <Badge className={s.className}>{s.label}</Badge>;
-};
+import { StatusBadge } from "@/components/Results/StatusBadge";
 
 const StudentResultsPage = async () => {
   const results = await getStudentResults();
@@ -68,7 +43,7 @@ const StudentResultsPage = async () => {
                     <span className="text-lg font-bold tabular-nums">
                       {r.totalScore ?? r.autoScore ?? "?"}/{r.maxScore}
                     </span>
-                    {statusBadge(r.status)}
+                    {<StatusBadge status={r.status} />}
                   </div>
                 </div>
               </CardHeader>
