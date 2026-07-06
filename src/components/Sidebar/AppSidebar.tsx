@@ -42,8 +42,8 @@ const AppSidebar = ({ groups }: { groups: NavGroup[] }) => {
 
   const isActive = (item: NavItem) => {
     if (item.notActiveFor?.includes(pathname)) return false;
-    if (item.exact) return pathname === item.url;
     if (pathname === item.url) return true;
+    if (item.exact) return false;
     return pathname.startsWith(item.url + "/");
   };
 

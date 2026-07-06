@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { LogOutIcon } from "lucide-react";
 import {
   SidebarProvider,
@@ -22,6 +22,22 @@ import { AppSidebar } from "./AppSidebar";
 import type { NavGroup } from "./nav-config";
 import { authClient } from "@/lib/auth-client";
 
+const getPageTitle = (pathname: string, groups: NavGroup[]): string => {
+  const normalized = pathname.replace(/\/$/, "") || "/";
+  const allItems = groups.flatMap((g) => g.items);
+  for (const item of allItems) {
+    if (item.notActiveFor?.includes(normalized)) continue;
+    if (normalized === item.url) return item.title;
+    if (item.exact) continue;
+    if (normalized.startsWith(item.url + "/")) return item.title;
+  }
+  const segments = normalized.split("/").filter(Boolean);
+  const last = segments[segments.length - 1];
+  return last ?
+      last.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+    : "Dashboard";
+};
+
 const SidebarLayout = ({
   groups,
   children,
@@ -31,6 +47,8 @@ const SidebarLayout = ({
 }) => {
   const { data: session } = authClient.useSession();
   const router = useRouter();
+  const pathname = usePathname();
+  const pageTitle = getPageTitle(pathname, groups);
 
   const handleSignOut = async () => {
     await authClient.signOut();
@@ -49,6 +67,7 @@ const SidebarLayout = ({
             orientation="vertical"
             className="h-6"
           />
+          <span className="truncate font-medium">{pageTitle}</span>
           <div className="ml-auto">
             <DropdownMenu>
               <DropdownMenuTrigger>
