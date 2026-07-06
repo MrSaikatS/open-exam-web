@@ -1,3 +1,4 @@
+import { format } from "date-fns";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { ArrowLeftIcon, BarChart3Icon } from "lucide-react";
@@ -146,7 +147,7 @@ const AdminExamResultsPage = async ({
                     <td className="px-4 py-3">{statusBadge(attempt.status)}</td>
                     <td className="text-muted-foreground px-4 py-3">
                       {attempt.submittedAt ?
-                        new Date(attempt.submittedAt).toLocaleDateString()
+                        format(new Date(attempt.submittedAt), "MMM d, yyyy")
                       : "—"}
                     </td>
                     <td className="px-4 py-3">

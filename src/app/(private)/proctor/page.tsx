@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import {
   EyeIcon,
   FileTextIcon,
@@ -18,6 +19,11 @@ import {
 import { StatCard } from "@/components/Dashboard/StatCard";
 import prisma from "@/lib/database/dbClient";
 import type { Route } from "next";
+
+export const metadata: Metadata = {
+  title: "Proctor Dashboard",
+  description: "Monitor exams and student activity",
+};
 
 const ProctorDashboardPage = async () => {
   const session = await auth.api.getSession({ headers: await headers() });

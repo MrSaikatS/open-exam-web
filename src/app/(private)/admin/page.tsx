@@ -256,9 +256,7 @@ const AdminDashboard = async () => {
         </CardHeader>
         <CardContent>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Link
-              href="/admin/users"
-              as={"/admin/users" as Route}>
+            <Link href="/admin/users">
               <Button
                 variant="outline"
                 size="lg"
@@ -267,9 +265,7 @@ const AdminDashboard = async () => {
                 Manage Users
               </Button>
             </Link>
-            <Link
-              href="/admin/exams/new"
-              as={"/admin/exams/new" as Route}>
+            <Link href="/admin/exams/new">
               <Button
                 variant="outline"
                 size="lg"
@@ -278,9 +274,7 @@ const AdminDashboard = async () => {
                 Create Exam
               </Button>
             </Link>
-            <Link
-              href="/admin/questions"
-              as={"/admin/questions" as Route}>
+            <Link href="/admin/questions">
               <Button
                 variant="outline"
                 size="lg"
@@ -289,9 +283,7 @@ const AdminDashboard = async () => {
                 Question Bank
               </Button>
             </Link>
-            <Link
-              href="/admin/results"
-              as={"/admin/results" as Route}>
+            <Link href="/admin/results">
               <Button
                 variant="outline"
                 size="lg"

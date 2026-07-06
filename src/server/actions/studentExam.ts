@@ -226,17 +226,19 @@ const submitAttempt = async (attemptId: string, examId: string) => {
     }
   }
 
-  await prisma.$transaction(updates);
+  updates.push(
+    prisma.examAttempt.update({
+      where: { id: attemptId },
+      data: {
+        status: "submitted",
+        submittedAt: new Date(),
+        autoScore,
+        totalScore: autoScore,
+      },
+    }),
+  );
 
-  await prisma.examAttempt.update({
-    where: { id: attemptId },
-    data: {
-      status: "submitted",
-      submittedAt: new Date(),
-      autoScore,
-      totalScore: autoScore,
-    },
-  });
+  await prisma.$transaction(updates);
 };
 
 export const submitExam = async (attemptId: string) => {

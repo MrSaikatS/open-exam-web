@@ -11,13 +11,20 @@ export type NavGroup = {
   items: NavItem[];
 };
 
+function matchesNotActiveFor(pattern: string, path: string): boolean {
+  if (!pattern.includes("[id]")) return pattern === path;
+  const regex = new RegExp("^" + pattern.replace(/\[id\]/g, "[^/]+") + "$");
+  return regex.test(path);
+}
+
 export function findMatchingNavItem(
   pathname: string,
   items: NavItem[],
 ): NavItem | undefined {
   const normalized = pathname.replace(/\/$/, "") || "/";
   for (const item of items) {
-    if (item.notActiveFor?.includes(normalized)) continue;
+    if (item.notActiveFor?.some((n) => matchesNotActiveFor(n, normalized)))
+      continue;
     if (normalized === item.url) return item;
     if (item.exact) continue;
     if (normalized.startsWith(item.url + "/")) return item;

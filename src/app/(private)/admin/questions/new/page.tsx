@@ -16,8 +16,8 @@ const NewBankQuestionPage = () => {
       <div className="flex items-center gap-4">
         <Link href="/admin/questions">
           <Button
-            variant="ghost"
-            size="icon">
+            variant="outline"
+            size="icon-lg">
             <ArrowLeftIcon className="size-4" />
           </Button>
         </Link>

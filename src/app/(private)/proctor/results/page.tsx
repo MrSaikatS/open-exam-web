@@ -1,3 +1,4 @@
+import { format } from "date-fns";
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { Route } from "next";
@@ -101,7 +102,7 @@ const ProctorResultsPage = async () => {
                     <td className="px-4 py-3">{statusBadge(r.status)}</td>
                     <td className="text-muted-foreground px-4 py-3">
                       {r.submittedAt ?
-                        new Date(r.submittedAt).toLocaleDateString()
+                        format(new Date(r.submittedAt), "MMM d, yyyy")
                       : "—"}
                     </td>
                     <td className="px-4 py-3">

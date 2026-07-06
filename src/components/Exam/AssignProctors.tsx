@@ -5,6 +5,16 @@ import { useState } from "react";
 import { toast } from "react-toastify";
 import { assignProctor, unassignProctor } from "@/server/actions/proctor";
 import { Button } from "../shadcnui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../shadcnui/dialog";
 
 type Proctor = {
   id: string;
@@ -35,6 +45,7 @@ const AssignProctors = ({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [removing, setRemoving] = useState<string | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(availableProctors.length > 0);
 
   const toggleSelected = (id: string) => {
@@ -65,8 +76,8 @@ const AssignProctors = ({
   };
 
   const handleUnassign = async (proctorId: string) => {
-    if (!confirm("Remove this proctor from the exam?")) return;
     setRemoving(proctorId);
+    setRemoveTarget(null);
     await unassignProctor(examId, proctorId);
     const removed = assignments.find((a) => a.proctorId === proctorId);
     if (removed) {
@@ -96,15 +107,48 @@ const AssignProctors = ({
                   {a.proctor.email}
                 </span>
               </div>
-              <Button
-                variant="outline"
-                size="icon-xs"
-                onClick={() => handleUnassign(a.proctorId)}
-                disabled={removing === a.proctorId}>
-                {removing === a.proctorId ?
-                  <Loader2Icon className="size-3 animate-spin" />
-                : <Trash2Icon className="text-destructive size-3" />}
-              </Button>
+              <Dialog
+                open={removeTarget === a.proctorId}
+                onOpenChange={(open) =>
+                  setRemoveTarget(open ? a.proctorId : null)
+                }>
+                <DialogTrigger
+                  render={
+                    <Button
+                      variant="outline"
+                      size="icon-xs"
+                      disabled={removing === a.proctorId}>
+                      {removing === a.proctorId ?
+                        <Loader2Icon className="size-3 animate-spin" />
+                      : <Trash2Icon className="text-destructive size-3" />}
+                    </Button>
+                  }
+                />
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Remove Proctor</DialogTitle>
+                    <DialogDescription>
+                      Remove {a.proctor.name} from this exam? They will no
+                      longer be able to monitor it.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter showCloseButton>
+                    <DialogClose
+                      render={
+                        <Button
+                          variant="destructive"
+                          size="lg"
+                          onClick={() => handleUnassign(a.proctorId)}
+                          disabled={removing === a.proctorId}>
+                          {removing === a.proctorId ?
+                            <Loader2Icon className="size-4 animate-spin" />
+                          : "Remove"}
+                        </Button>
+                      }
+                    />
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           ))}
         </div>

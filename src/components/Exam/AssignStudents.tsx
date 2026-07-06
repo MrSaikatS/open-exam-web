@@ -5,6 +5,16 @@ import { useState } from "react";
 import { toast } from "react-toastify";
 import { assignExam, unassignExam } from "@/server/actions/assignment";
 import { Button } from "../shadcnui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../shadcnui/dialog";
 
 type Student = {
   id: string;
@@ -35,6 +45,7 @@ const AssignStudents = ({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [removing, setRemoving] = useState<string | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(availableStudents.length > 0);
 
   const toggleSelected = (id: string) => {
@@ -65,8 +76,8 @@ const AssignStudents = ({
   };
 
   const handleUnassign = async (userId: string) => {
-    if (!confirm("Remove this student from the exam?")) return;
     setRemoving(userId);
+    setRemoveTarget(null);
     await unassignExam(examId, userId);
     const removed = assignments.find((a) => a.userId === userId);
     if (removed) {
@@ -96,15 +107,48 @@ const AssignStudents = ({
                   {a.user.email}
                 </span>
               </div>
-              <Button
-                variant="outline"
-                size="icon-xs"
-                onClick={() => handleUnassign(a.userId)}
-                disabled={removing === a.userId}>
-                {removing === a.userId ?
-                  <Loader2Icon className="size-3 animate-spin" />
-                : <Trash2Icon className="text-destructive size-3" />}
-              </Button>
+              <Dialog
+                open={removeTarget === a.userId}
+                onOpenChange={(open) =>
+                  setRemoveTarget(open ? a.userId : null)
+                }>
+                <DialogTrigger
+                  render={
+                    <Button
+                      variant="outline"
+                      size="icon-xs"
+                      disabled={removing === a.userId}>
+                      {removing === a.userId ?
+                        <Loader2Icon className="size-3 animate-spin" />
+                      : <Trash2Icon className="text-destructive size-3" />}
+                    </Button>
+                  }
+                />
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Remove Student</DialogTitle>
+                    <DialogDescription>
+                      Remove {a.user.name} from this exam? They will lose access
+                      to start or continue.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter showCloseButton>
+                    <DialogClose
+                      render={
+                        <Button
+                          variant="destructive"
+                          size="lg"
+                          onClick={() => handleUnassign(a.userId)}
+                          disabled={removing === a.userId}>
+                          {removing === a.userId ?
+                            <Loader2Icon className="size-4 animate-spin" />
+                          : "Remove"}
+                        </Button>
+                      }
+                    />
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           ))}
         </div>

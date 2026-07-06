@@ -1,5 +1,6 @@
 "use client";
 
+import { format } from "date-fns";
 import { Loader2Icon, SearchIcon, Trash2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -12,6 +13,16 @@ import {
   unbanUser,
 } from "@/server/actions/user";
 import { Button } from "../shadcnui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../shadcnui/dialog";
 import {
   Select,
   SelectContent,
@@ -45,6 +56,8 @@ const UsersTable = ({ initialUsers, initialTotal }: UsersTableProps) => {
   const [search, setSearch] = useState("");
   const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [banTarget, setBanTarget] = useState<UserRow | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
   const limit = 20;
 
@@ -81,13 +94,8 @@ const UsersTable = ({ initialUsers, initialTotal }: UsersTableProps) => {
   }, [fetchUsers]);
 
   const handleDelete = async (userId: string) => {
-    if (
-      !confirm(
-        "Are you sure you want to permanently delete this user? This action cannot be undone.",
-      )
-    )
-      return;
     setLoadingId(userId);
+    setDeleteTarget(null);
     await deleteUser(userId);
     toast.success("User deleted");
     refresh();
@@ -109,20 +117,21 @@ const UsersTable = ({ initialUsers, initialTotal }: UsersTableProps) => {
 
   const handleBanToggle = async (user: UserRow) => {
     setLoadingId(user.id);
+    setBanTarget(null);
     if (user.banned) {
       await unbanUser(user.id);
       toast.success("User unbanned");
     } else {
-      if (!confirm(`Ban ${user.name}? They will be unable to sign in.`)) {
-        setLoadingId(null);
-        return;
-      }
       await banUser(user.id);
       toast.success("User banned");
     }
     refresh();
     fetchUsers(search, offset);
     setLoadingId(null);
+  };
+
+  const confirmBan = (user: UserRow) => {
+    setBanTarget(user);
   };
 
   const totalPages = Math.ceil(total / limit);
@@ -224,14 +233,16 @@ const UsersTable = ({ initialUsers, initialTotal }: UsersTableProps) => {
                     }
                   </td>
                   <td className="text-muted-foreground px-4 py-3">
-                    {new Date(user.createdAt).toLocaleDateString()}
+                    {format(user.createdAt, "MMM d, yyyy")}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
                       <Button
                         variant="outline"
                         size="xs"
-                        onClick={() => handleBanToggle(user)}
+                        onClick={() =>
+                          user.banned ? handleBanToggle(user) : confirmBan(user)
+                        }
                         disabled={loadingId === user.id}>
                         {loadingId === user.id ?
                           <Loader2Icon className="size-3 animate-spin" />
@@ -239,15 +250,87 @@ const UsersTable = ({ initialUsers, initialTotal }: UsersTableProps) => {
                           "Unban"
                         : "Ban"}
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="icon-sm"
-                        onClick={() => handleDelete(user.id)}
-                        disabled={loadingId === user.id}>
-                        {loadingId === user.id ?
-                          <Loader2Icon className="size-4 animate-spin" />
-                        : <Trash2Icon className="text-destructive size-4" />}
-                      </Button>
+                      <Dialog
+                        open={deleteTarget === user.id}
+                        onOpenChange={(open) =>
+                          setDeleteTarget(open ? user.id : null)
+                        }>
+                        <DialogTrigger
+                          render={
+                            <Button
+                              variant="outline"
+                              size="icon-sm"
+                              disabled={loadingId === user.id}>
+                              {loadingId === user.id ?
+                                <Loader2Icon className="size-4 animate-spin" />
+                              : <Trash2Icon className="text-destructive size-4" />
+                              }
+                            </Button>
+                          }
+                        />
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Delete User</DialogTitle>
+                            <DialogDescription>
+                              Permanently delete {user.name}? This action cannot
+                              be undone.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <DialogFooter showCloseButton>
+                            <DialogClose
+                              render={
+                                <Button
+                                  variant="destructive"
+                                  size="lg"
+                                  onClick={() => handleDelete(user.id)}
+                                  disabled={loadingId === user.id}>
+                                  {loadingId === user.id ?
+                                    <>
+                                      <Loader2Icon className="size-4 animate-spin" />{" "}
+                                      Deleting...
+                                    </>
+                                  : <>
+                                      <Trash2Icon className="size-4" /> Delete
+                                    </>
+                                  }
+                                </Button>
+                              }
+                            />
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                      <Dialog
+                        open={banTarget?.id === user.id}
+                        onOpenChange={(open) =>
+                          setBanTarget(open ? user : null)
+                        }>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Ban User</DialogTitle>
+                            <DialogDescription>
+                              Ban {user.name}? They will be unable to sign in.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <DialogFooter showCloseButton>
+                            <DialogClose
+                              render={
+                                <Button
+                                  variant="destructive"
+                                  size="lg"
+                                  onClick={() => handleBanToggle(user)}
+                                  disabled={loadingId === user.id}>
+                                  {loadingId === user.id ?
+                                    <>
+                                      <Loader2Icon className="size-4 animate-spin" />{" "}
+                                      Banning...
+                                    </>
+                                  : "Ban"}
+                                </Button>
+                              }
+                            />
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
                     </div>
                   </td>
                 </tr>

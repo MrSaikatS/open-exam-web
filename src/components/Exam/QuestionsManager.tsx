@@ -19,6 +19,7 @@ import { Field, FieldError, FieldLabel } from "../shadcnui/field";
 import { Input } from "../shadcnui/input";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -359,11 +360,12 @@ const ImportBankDialog = ({ examId }: { examId: string }) => {
 
 const QuestionsManager = ({ examId, questions }: QuestionsManagerProps) => {
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [loadingDelete, setLoadingDelete] = useState<string | null>(null);
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this question?")) return;
     setLoadingDelete(id);
+    setDeleteId(null);
     await deleteQuestion(id);
     toast.success("Question deleted");
     setLoadingDelete(null);
@@ -420,15 +422,52 @@ const QuestionsManager = ({ examId, questions }: QuestionsManagerProps) => {
                   onClick={() => setEditingId(q.id)}>
                   <PencilIcon className="size-3" />
                 </Button>
-                <Button
-                  variant="outline"
-                  size="icon-xs"
-                  onClick={() => handleDelete(q.id)}
-                  disabled={loadingDelete === q.id}>
-                  {loadingDelete === q.id ?
-                    <Loader2Icon className="size-3 animate-spin" />
-                  : <Trash2Icon className="text-destructive size-3" />}
-                </Button>
+                <Dialog
+                  open={deleteId === q.id}
+                  onOpenChange={(open) => setDeleteId(open ? q.id : null)}>
+                  <DialogTrigger
+                    render={
+                      <Button
+                        variant="outline"
+                        size="icon-xs"
+                        disabled={loadingDelete === q.id}>
+                        {loadingDelete === q.id ?
+                          <Loader2Icon className="size-3 animate-spin" />
+                        : <Trash2Icon className="text-destructive size-3" />}
+                      </Button>
+                    }
+                  />
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Delete Question</DialogTitle>
+                      <DialogDescription>
+                        Remove this question from the exam. This does not affect
+                        the question bank.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter showCloseButton>
+                      <DialogClose
+                        render={
+                          <Button
+                            variant="destructive"
+                            size="lg"
+                            onClick={() => handleDelete(q.id)}
+                            disabled={loadingDelete === q.id}>
+                            {loadingDelete === q.id ?
+                              <>
+                                <Loader2Icon className="size-4 animate-spin" />{" "}
+                                Deleting...
+                              </>
+                            : <>
+                                <Trash2Icon className="size-4" /> Delete
+                              </>
+                            }
+                          </Button>
+                        }
+                      />
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
           ))}
