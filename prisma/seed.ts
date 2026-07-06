@@ -61,6 +61,105 @@ async function main() {
   for (const { email, name, role } of roleAccounts) {
     await upsertUser(email, name, role, email);
   }
+
+  // Migrate existing inline questions to bank questions
+  const existingQuestions = await prisma.question.findMany({
+    include: { exam: { select: { createdById: true } } },
+  });
+
+  for (const q of existingQuestions) {
+    const existingBank = await prisma.bankQuestion.findFirst({
+      where: { text: q.text, type: q.type },
+    });
+    if (!existingBank) {
+      await prisma.bankQuestion.create({
+        data: {
+          text: q.text,
+          type: q.type,
+          options: q.options,
+          answer: q.answer,
+          points: q.points,
+          createdById: q.exam.createdById,
+        },
+      });
+    }
+  }
+
+  // Seed sample bank questions if bank is empty
+  const bankCount = await prisma.bankQuestion.count();
+  if (bankCount === 0) {
+    const admin = await prisma.user.findFirst({
+      where: { role: "admin" },
+    });
+    if (!admin) return;
+
+    const sampleQuestions = [
+      {
+        text: "What is the capital of France?",
+        type: "single_choice",
+        options: "London\nBerlin\nParis\nMadrid",
+        answer: "Paris",
+        points: 1,
+      },
+      {
+        text: "Which of the following are programming languages?",
+        type: "multiple_choice",
+        options: "Python\nHTML\nJavaScript\nCSS",
+        answer: "Python\nJavaScript",
+        points: 2,
+      },
+      {
+        text: "The Earth is flat.",
+        type: "true_false",
+        options: "True\nFalse",
+        answer: "False",
+        points: 1,
+      },
+      {
+        text: "What is the chemical symbol for water?",
+        type: "short_answer",
+        options: "",
+        answer: "H2O",
+        points: 1,
+      },
+      {
+        text: "What is 2 + 2?",
+        type: "short_answer",
+        options: "",
+        answer: "4",
+        points: 1,
+      },
+      {
+        text: "Which planet is known as the Red Planet?",
+        type: "single_choice",
+        options: "Venus\nMars\nJupiter\nSaturn",
+        answer: "Mars",
+        points: 1,
+      },
+      {
+        text: "Select all prime numbers.",
+        type: "multiple_choice",
+        options: "2\n4\n7\n10",
+        answer: "2\n7",
+        points: 2,
+      },
+      {
+        text: "The sun rises in the west.",
+        type: "true_false",
+        options: "True\nFalse",
+        answer: "False",
+        points: 1,
+      },
+    ];
+
+    for (const sq of sampleQuestions) {
+      await prisma.bankQuestion.create({
+        data: { ...sq, createdById: admin.id },
+      });
+    }
+
+    console.log("Seeded sample bank questions");
+  }
 }
 
 main()

@@ -22,11 +22,44 @@ export const QuestionCard = ({
   onChange,
 }: QuestionCardProps) => {
   const options =
-    question.options ? (JSON.parse(question.options) as string[]) : [];
+    question.options ? question.options.split("\n").filter(Boolean) : [];
+
+  const selectedValues = value ? value.split("\n").filter(Boolean) : [];
+
+  const toggleMultiple = (opt: string) => {
+    const set = new Set(selectedValues);
+    if (set.has(opt)) set.delete(opt);
+    else set.add(opt);
+    onChange(Array.from(set).join("\n"));
+  };
 
   const renderInput = () => {
     switch (question.type) {
       case "multiple_choice":
+        return (
+          <div className="grid gap-3">
+            {options.map((opt) => {
+              const checked = selectedValues.includes(opt);
+              return (
+                <Label
+                  key={opt}
+                  className={`hover:bg-accent flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-colors ${
+                    checked ? "border-primary bg-primary/5" : "border-border"
+                  }`}>
+                  <input
+                    type="checkbox"
+                    value={opt}
+                    checked={checked}
+                    onChange={() => toggleMultiple(opt)}
+                    className="accent-primary size-4"
+                  />
+                  <span>{opt}</span>
+                </Label>
+              );
+            })}
+          </div>
+        );
+
       case "single_choice":
         return (
           <div className="grid gap-3">

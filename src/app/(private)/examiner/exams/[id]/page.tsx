@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { format } from "date-fns";
-import { ArrowLeftIcon, UsersIcon } from "lucide-react";
+import { ArrowLeftIcon, BarChart3Icon, UsersIcon } from "lucide-react";
 import ExamForm from "@/components/Exam/ExamForm";
 import QuestionsManager from "@/components/Exam/QuestionsManager";
 import { Button } from "@/components/shadcnui/button";
@@ -73,8 +73,15 @@ const ExaminerExamDetailPage = async ({
         <Link href={`/examiner/exams/${id}/assign`}>
           <Button
             variant="outline"
-            size="sm">
+            size="lg">
             <UsersIcon className="size-4" /> Assign
+          </Button>
+        </Link>
+        <Link href={`/examiner/exams/${id}/results`}>
+          <Button
+            variant="outline"
+            size="lg">
+            <BarChart3Icon className="size-4" /> Results
           </Button>
         </Link>
       </div>

@@ -229,7 +229,6 @@ export const submitExam = async (attemptId: string) => {
 
   revalidatePath("/student/exams");
   revalidatePath(`/student/exams/${attempt.examId}`);
-  redirect(`/student/results/${attemptId}`);
 };
 
 export const getStudentResults = async () => {

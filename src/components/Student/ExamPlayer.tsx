@@ -1,15 +1,15 @@
 "use client";
 
+import { submitExam } from "@/server/actions/studentExam";
 import {
-  AlertTriangleIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   ClockIcon,
   Loader2Icon,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
-import { saveAnswer, submitExam } from "@/server/actions/studentExam";
 import { Button } from "../shadcnui/button";
 import {
   Dialog,
@@ -65,55 +65,97 @@ export const ExamPlayer = ({
   });
   const [timeLeft, setTimeLeft] = useState(0);
   const [submitting, setSubmitting] = useState(false);
-  const [autoSubmitted, setAutoSubmitted] = useState(false);
-  const savingRef = useRef(false);
+
+  const router = useRouter();
+  const submittingRef = useRef(false);
+  const answersRef = useRef(answers);
+  const currentQuestionRef = useRef(questions[currentIndex]);
+
+  useEffect(() => {
+    answersRef.current = answers;
+    currentQuestionRef.current = questions[currentIndex];
+  });
 
   const currentQuestion = questions[currentIndex];
 
+  const saveAnswer = useCallback(
+    async (questionId: string, text: string) => {
+      const { saveAnswer: doSave } =
+        await import("@/server/actions/studentExam");
+      await doSave(attemptId, questionId, text);
+    },
+    [attemptId],
+  );
+
   const saveCurrentAnswer = useCallback(async () => {
-    if (!currentQuestion || savingRef.current) return;
-    savingRef.current = true;
+    const q = currentQuestionRef.current;
+    if (!q) return;
+    const text = answersRef.current[q.id] ?? "";
     try {
-      await saveAnswer(
-        attemptId,
-        currentQuestion.id,
-        answers[currentQuestion.id] ?? "",
-      );
+      await saveAnswer(q.id, text);
     } catch {
       toast.error("Failed to save answer");
-    } finally {
-      savingRef.current = false;
     }
-  }, [attemptId, currentQuestion, answers]);
+  }, [saveAnswer]);
 
   const handleSubmit = useCallback(async () => {
-    setAutoSubmitted(true);
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setSubmitting(true);
+
     try {
       await saveCurrentAnswer();
       await submitExam(attemptId);
+      router.push(`/student/results/${attemptId}`);
     } catch {
       toast.error("Failed to submit exam");
       setSubmitting(false);
+      submittingRef.current = false;
     }
-  }, [attemptId, saveCurrentAnswer]);
+  }, [attemptId, saveCurrentAnswer, router]);
 
   useEffect(() => {
     const endTimeMs = new Date(startedAt).getTime() + duration * 60 * 1000;
+
     const tick = () => {
       const remaining = Math.max(
         0,
         Math.floor((endTimeMs - Date.now()) / 1000),
       );
       setTimeLeft(remaining);
-      if (remaining <= 0) {
-        handleSubmit();
+      if (remaining <= 0 && !submittingRef.current) {
+        submittingRef.current = true;
+        setSubmitting(true);
+
+        const q = currentQuestionRef.current;
+        const onFail = () => {
+          toast.error("Failed to submit exam");
+          setSubmitting(false);
+          submittingRef.current = false;
+        };
+        const doSubmit = () =>
+          submitExam(attemptId)
+            .then(() => router.push(`/student/results/${attemptId}`))
+            .catch(onFail);
+
+        if (q) {
+          const text = answersRef.current[q.id] ?? "";
+          import("@/server/actions/studentExam")
+            .then((m) => m.saveAnswer(attemptId, q.id, text))
+            .catch(() => {})
+            .finally(doSubmit);
+        } else {
+          doSubmit();
+        }
       }
     };
+
     tick();
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
-  }, [handleSubmit, startedAt, duration]);
+    // Intentionally stable — refs avoid stale closures
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -127,18 +169,8 @@ export const ExamPlayer = ({
     setCurrentIndex(index);
   };
 
-  if (timeLeft === 0 && !submitting && autoSubmitted) {
-    return (
-      <section className="grid place-items-center gap-4 py-20">
-        <AlertTriangleIcon className="text-destructive size-12" />
-        <h1 className="text-2xl font-medium">Time&apos;s up!</h1>
-        <p className="text-muted-foreground">Your exam has been submitted.</p>
-      </section>
-    );
-  }
-
   return (
-    <section className="mx-auto grid max-w-3xl gap-6">
+    <section className="mx-auto grid min-w-xl gap-6">
       <div className="flex items-center justify-between">
         <div className="grid gap-1">
           <h1 className="text-2xl font-medium">{examTitle}</h1>

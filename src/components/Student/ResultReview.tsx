@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2Icon, XCircleIcon, MinusCircleIcon } from "lucide-react";
+import { CheckCircle2Icon, MinusCircleIcon, XCircleIcon } from "lucide-react";
 
 type Answer = {
   id: string;
@@ -40,7 +40,7 @@ export const ResultReview = ({
   const awardedScore = totalScore ?? autoScore ?? 0;
 
   return (
-    <div className="grid gap-6">
+    <div className="grid min-w-xl gap-6">
       <div className="grid gap-4 rounded-lg border p-6 sm:grid-cols-3">
         <div className="text-center">
           <p className="text-3xl font-bold tabular-nums">
@@ -88,7 +88,7 @@ export const ResultReview = ({
                   "border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20"
                 : studentAnswer ?
                   "border-red-200 bg-red-50/50 dark:border-red-800 dark:bg-red-950/20"
-                : "border-border"
+                : "border-muted-foreground/20 bg-muted/30"
               }`}>
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
@@ -113,38 +113,48 @@ export const ResultReview = ({
               </div>
 
               <div className="grid gap-2 pl-10">
-                {q.type !== "true_false" &&
-                  q.type !== "short_answer" &&
+                {(q.type === "multiple_choice" || q.type === "single_choice") &&
                   q.options && (
                     <div className="grid gap-1">
-                      {(JSON.parse(q.options) as string[]).map((opt) => {
-                        const isSelected = studentAnswer === opt;
-                        const isRight = correctAnswer === opt;
-                        const isWrong = isSelected && !isRight;
-                        return (
-                          <div
-                            key={opt}
-                            className={`rounded px-3 py-1.5 text-sm ${
-                              isRight ?
-                                "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
-                              : isWrong ?
-                                "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
-                              : "text-muted-foreground"
-                            }`}>
-                            {opt}
-                            {isRight && (
-                              <span className="ml-2 text-xs">
-                                (Correct answer)
-                              </span>
-                            )}
-                            {isWrong && (
-                              <span className="ml-2 text-xs">
-                                (Your answer)
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })}
+                      {(q.options.split("\n").filter(Boolean) as string[]).map(
+                        (opt) => {
+                          const selectedAnswers =
+                            q.type === "multiple_choice" ?
+                              studentAnswer.split("\n").filter(Boolean)
+                            : [studentAnswer];
+                          const isSelected = selectedAnswers.includes(opt);
+                          const correctAnswers = correctAnswer
+                            .split("\n")
+                            .filter(Boolean);
+                          const isRight = correctAnswers.includes(opt);
+                          const isWrong = isSelected && !isRight;
+                          return (
+                            <div
+                              key={opt}
+                              className={`rounded px-3 py-1.5 text-sm ${
+                                isRight ?
+                                  "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
+                                : isWrong ?
+                                  "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                                : "text-muted-foreground"
+                              }`}>
+                              {opt}
+                              {isRight && (
+                                <span className="ml-2 text-xs">
+                                  {q.type === "multiple_choice" ?
+                                    "(Correct answer)"
+                                  : "(Correct answer)"}
+                                </span>
+                              )}
+                              {isWrong && (
+                                <span className="ml-2 text-xs">
+                                  (Your answer)
+                                </span>
+                              )}
+                            </div>
+                          );
+                        },
+                      )}
                     </div>
                   )}
 

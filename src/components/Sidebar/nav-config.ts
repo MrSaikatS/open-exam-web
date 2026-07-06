@@ -30,9 +30,10 @@ export const adminNav: NavGroup[] = [
         title: "All Exams",
         url: "/admin/exams",
         icon: "FileText",
-        notActiveFor: ["/admin/exams/new"],
+        notActiveFor: ["/admin/exams/new", "/admin/exams/[id]"],
       },
       { title: "Create Exam", url: "/admin/exams/new", icon: "PlusCircle" },
+      { title: "Question Bank", url: "/admin/questions", icon: "BookOpen" },
     ],
   },
   {
@@ -66,9 +67,10 @@ export const examinerNav: NavGroup[] = [
         title: "All Exams",
         url: "/examiner/exams",
         icon: "FileText",
-        notActiveFor: ["/examiner/exams/new"],
+        notActiveFor: ["/examiner/exams/new", "/examiner/exams/[id]"],
       },
       { title: "Create Exam", url: "/examiner/exams/new", icon: "PlusCircle" },
+      { title: "Question Bank", url: "/examiner/questions", icon: "BookOpen" },
     ],
   },
   {

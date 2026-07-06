@@ -108,7 +108,7 @@ const ExamsTable = ({ exams, basePath }: ExamsTableProps) => {
                 {exam.createdBy.name}
               </td>
               <td className="px-4 py-3">
-                <div className="flex items-center justify-end gap-1">
+                <div className="flex items-center justify-end gap-2">
                   <Link href={`${basePath}/exams/${exam.id}` as Route}>
                     <Button
                       variant="outline"
@@ -129,7 +129,7 @@ const ExamsTable = ({ exams, basePath }: ExamsTableProps) => {
                       </Link>
                       <Button
                         variant="outline"
-                        size="icon-lg"
+                        size="lg"
                         onClick={() => handlePublish(exam.id)}
                         disabled={loadingId === exam.id}>
                         Publish

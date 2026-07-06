@@ -2,12 +2,13 @@
 
 import { usePathname } from "next/navigation";
 import {
+  BarChart3Icon,
+  BookOpenIcon,
+  FileTextIcon,
   GraduationCapIcon,
   LayoutDashboardIcon,
-  FileTextIcon,
   PlusCircleIcon,
   UsersIcon,
-  BarChart3Icon,
   type LucideIcon,
 } from "lucide-react";
 
@@ -33,6 +34,7 @@ const iconMap: Record<string, LucideIcon> = {
   PlusCircle: PlusCircleIcon,
   Users: UsersIcon,
   BarChart3: BarChart3Icon,
+  BookOpen: BookOpenIcon,
 };
 
 const AppSidebar = ({ groups }: { groups: NavGroup[] }) => {

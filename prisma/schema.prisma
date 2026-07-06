@@ -23,6 +23,7 @@ model User {
   sessions      Session[]
   accounts      Account[]
   exams              Exam[]             @relation("CreatedExams")
+  bankQuestions      BankQuestion[]
   examAssignments    ExamAssignment[]   @relation("AssignedExams")
   createdAssignments ExamAssignment[]   @relation("CreatedAssignments")
   examAttempts       ExamAttempt[]
@@ -117,6 +118,22 @@ model ExamAssignment {
   @@index([examId])
   @@index([userId])
   @@map("exam_assignment")
+}
+
+model BankQuestion {
+  id          String   @id @default(uuid())
+  text        String
+  type        String   @default("multiple_choice")
+  options     String?
+  answer      String?
+  points      Int      @default(1)
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([createdById])
+  @@map("bank_question")
 }
 
 model Question {
