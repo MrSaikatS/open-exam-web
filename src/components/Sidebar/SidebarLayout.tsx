@@ -63,7 +63,9 @@ const SidebarLayout = ({
                   <DropdownMenuLabel>{session?.user?.email}</DropdownMenuLabel>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut}>
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={handleSignOut}>
                   <LogOutIcon />
                   Sign out
                 </DropdownMenuItem>
