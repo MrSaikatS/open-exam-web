@@ -95,6 +95,10 @@ export const proctorNav: NavGroup[] = [
     label: "Exams",
     items: [{ title: "All Exams", url: "/proctor/exams", icon: "FileText" }],
   },
+  {
+    label: "Reports",
+    items: [{ title: "Results", url: "/proctor/results", icon: "BarChart3" }],
+  },
 ];
 
 export const studentNav: NavGroup[] = [

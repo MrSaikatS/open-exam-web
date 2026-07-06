@@ -161,5 +161,14 @@ Form: `<form onSubmit={handleSubmit(handler)} noValidate>`. Submit button shows 
 
 - `src/server/` — server-only modules (`import "server-only"`).
 - `src/hooks/` — custom React hooks.
-- Git on Windows: use PowerShell here-strings for commits.
 - No CI, no pre-commit hooks.
+
+## Git commits
+
+Use PowerShell here-strings:
+
+```powershell
+git commit -m @"
+commit message here
+"@
+```

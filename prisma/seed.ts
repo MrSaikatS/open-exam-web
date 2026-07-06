@@ -94,19 +94,13 @@ async function main() {
     if (!admin) return;
 
     const sampleQuestions = [
+      // --- General Knowledge (10) ---
       {
         text: "What is the capital of France?",
         type: "single_choice",
         options: "London\nBerlin\nParis\nMadrid",
         answer: "Paris",
         points: 1,
-      },
-      {
-        text: "Which of the following are programming languages?",
-        type: "multiple_choice",
-        options: "Python\nHTML\nJavaScript\nCSS",
-        answer: "Python\nJavaScript",
-        points: 2,
       },
       {
         text: "The Earth is flat.",
@@ -118,15 +112,7 @@ async function main() {
       {
         text: "What is the chemical symbol for water?",
         type: "short_answer",
-        options: "",
         answer: "H2O",
-        points: 1,
-      },
-      {
-        text: "What is 2 + 2?",
-        type: "short_answer",
-        options: "",
-        answer: "4",
         points: 1,
       },
       {
@@ -137,18 +123,115 @@ async function main() {
         points: 1,
       },
       {
-        text: "Select all prime numbers.",
+        text: "What is the largest ocean on Earth?",
+        type: "single_choice",
+        options: "Atlantic\nIndian\nPacific\nArctic",
+        answer: "Pacific",
+        points: 1,
+      },
+      {
+        text: "Which of the following are fruit?",
         type: "multiple_choice",
-        options: "2\n4\n7\n10",
-        answer: "2\n7",
+        options: "Apple\nCarrot\nBanana\nBroccoli",
+        answer: "Apple\nBanana",
         points: 2,
       },
       {
-        text: "The sun rises in the west.",
+        text: "Light travels faster than sound.",
+        type: "true_false",
+        options: "True\nFalse",
+        answer: "True",
+        points: 1,
+      },
+      {
+        text: "Who wrote 'Romeo and Juliet'?",
+        type: "short_answer",
+        answer: "William Shakespeare",
+        points: 2,
+      },
+      {
+        text: "What is the powerhouse of the cell?",
+        type: "single_choice",
+        options: "Nucleus\nMitochondria\nRibosome\nGolgi apparatus",
+        answer: "Mitochondria",
+        points: 1,
+      },
+      {
+        text: "The Great Wall of China is visible from space.",
         type: "true_false",
         options: "True\nFalse",
         answer: "False",
         points: 1,
+      },
+      // --- Programming (10) ---
+      {
+        text: "Which of the following are programming languages?",
+        type: "multiple_choice",
+        options: "Python\nHTML\nJavaScript\nCSS",
+        answer: "Python\nJavaScript",
+        points: 2,
+      },
+      {
+        text: "What does SQL stand for?",
+        type: "single_choice",
+        options:
+          "Simple Query Language\nStructured Query Language\nStandard Question Language\nSequential Query Logic",
+        answer: "Structured Query Language",
+        points: 1,
+      },
+      {
+        text: "What is 2 + 2 in JavaScript?",
+        type: "short_answer",
+        answer: "4",
+        points: 1,
+      },
+      {
+        text: "A variable declared with 'const' cannot be reassigned.",
+        type: "true_false",
+        options: "True\nFalse",
+        answer: "True",
+        points: 1,
+      },
+      {
+        text: "Which data structure uses LIFO order?",
+        type: "single_choice",
+        options: "Queue\nStack\nArray\nLinked List",
+        answer: "Stack",
+        points: 1,
+      },
+      {
+        text: "Which of the following are relational databases?",
+        type: "multiple_choice",
+        options: "PostgreSQL\nMongoDB\nMySQL\nRedis",
+        answer: "PostgreSQL\nMySQL",
+        points: 2,
+      },
+      {
+        text: "What does API stand for?",
+        type: "short_answer",
+        answer: "Application Programming Interface",
+        points: 2,
+      },
+      {
+        text: "In Python, 'len()' returns the length of a sequence.",
+        type: "true_false",
+        options: "True\nFalse",
+        answer: "True",
+        points: 1,
+      },
+      {
+        text: "Which language is primarily used for styling web pages?",
+        type: "single_choice",
+        options: "HTML\nJavaScript\nCSS\nPython",
+        answer: "CSS",
+        points: 1,
+      },
+      {
+        text: "Which of the following are version control systems?",
+        type: "multiple_choice",
+        options: "Git\nSVN\nDocker\nMercurial",
+        answer: "Git\nSVN\nMercurial",
+        points: 2,
       },
     ];
 

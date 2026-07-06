@@ -22,11 +22,13 @@ model User {
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
-  exams              Exam[]             @relation("CreatedExams")
-  bankQuestions      BankQuestion[]
-  examAssignments    ExamAssignment[]   @relation("AssignedExams")
-  createdAssignments ExamAssignment[]   @relation("CreatedAssignments")
-  examAttempts       ExamAttempt[]
+  exams                    Exam[]             @relation("CreatedExams")
+  bankQuestions            BankQuestion[]
+  examAssignments          ExamAssignment[]   @relation("AssignedExams")
+  createdAssignments       ExamAssignment[]   @relation("CreatedAssignments")
+  examProctors             ExamProctor[]      @relation("ProctorExams")
+  createdProctorAssignments ExamProctor[]      @relation("CreatedProctorAssignments")
+  examAttempts             ExamAttempt[]
 
   @@unique([email])
   @@map("user")
@@ -97,6 +99,7 @@ model Exam {
 
   questions    Question[]
   assignments  ExamAssignment[]
+  proctors     ExamProctor[]
   attempts     ExamAttempt[]
 
   @@index([createdById])
@@ -118,6 +121,22 @@ model ExamAssignment {
   @@index([examId])
   @@index([userId])
   @@map("exam_assignment")
+}
+
+model ExamProctor {
+  id           String   @id @default(uuid())
+  examId       String
+  exam         Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  proctorId    String
+  proctor      User     @relation("ProctorExams", fields: [proctorId], references: [id], onDelete: Cascade)
+  assignedById String
+  assignedBy   User     @relation("CreatedProctorAssignments", fields: [assignedById], references: [id])
+  assignedAt   DateTime @default(now())
+
+  @@unique([examId, proctorId])
+  @@index([examId])
+  @@index([proctorId])
+  @@map("exam_proctor")
 }
 
 model BankQuestion {

@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { format } from "date-fns";
-import { ArrowLeftIcon, BarChart3Icon, UsersIcon } from "lucide-react";
+import { ArrowLeftIcon, BarChart3Icon, EyeIcon, UsersIcon } from "lucide-react";
 import ExamForm from "@/components/Exam/ExamForm";
 import QuestionsManager from "@/components/Exam/QuestionsManager";
 import { Button } from "@/components/shadcnui/button";
@@ -75,12 +75,19 @@ const AdminExamDetailPage = async ({
         </div>
       )}
 
-      <div className="border-border flex gap-2 border-t pt-8">
+      <div className="border-border flex flex-wrap gap-2 border-t pt-8">
         <Link href={`/admin/exams/${id}/assign`}>
           <Button
             variant="outline"
             size="lg">
-            <UsersIcon className="size-4" /> Assign
+            <UsersIcon className="size-4" /> Assign Students
+          </Button>
+        </Link>
+        <Link href={`/admin/exams/${id}/assign-proctor` as Route}>
+          <Button
+            variant="outline"
+            size="lg">
+            <EyeIcon className="size-4" /> Assign Proctors
           </Button>
         </Link>
         <Link href={`/admin/exams/${id}/results`}>

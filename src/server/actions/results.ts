@@ -6,10 +6,22 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/database/dbClient";
 
+const getProctorExamIds = async (proctorId: string) => {
+  const assignments = await prisma.examProctor.findMany({
+    where: { proctorId },
+    select: { examId: true },
+  });
+  return assignments.map((a) => a.examId);
+};
+
 export const getExamResults = async (examId: string) => {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/");
-  if (session.user.role !== "admin" && session.user.role !== "examiner")
+  if (
+    session.user.role !== "admin" &&
+    session.user.role !== "examiner" &&
+    session.user.role !== "proctor"
+  )
     redirect("/");
 
   const exam = await prisma.exam.findUnique({
@@ -18,9 +30,7 @@ export const getExamResults = async (examId: string) => {
   });
 
   if (!exam) {
-    redirect(
-      session.user.role === "admin" ? "/admin/exams" : "/examiner/exams",
-    );
+    redirect("/");
   }
 
   if (
@@ -28,6 +38,11 @@ export const getExamResults = async (examId: string) => {
     exam.createdById !== session.user.id
   ) {
     redirect("/examiner/exams");
+  }
+
+  if (session.user.role === "proctor") {
+    const proctorExamIds = await getProctorExamIds(session.user.id);
+    if (!proctorExamIds.includes(examId)) redirect("/proctor/results" as never);
   }
 
   const attempts = await prisma.examAttempt.findMany({
@@ -73,6 +88,9 @@ export const getAllResults = async () => {
       select: { id: true },
     });
     where.examId = { in: examIds.map((e) => e.id) };
+  } else if (session.user.role === "proctor") {
+    const examIds = await getProctorExamIds(session.user.id);
+    where.examId = { in: examIds };
   } else if (session.user.role !== "admin") {
     redirect("/");
   }
@@ -101,7 +119,11 @@ export const getAllResults = async () => {
 export const getResultDetail = async (attemptId: string) => {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/");
-  if (session.user.role !== "admin" && session.user.role !== "examiner")
+  if (
+    session.user.role !== "admin" &&
+    session.user.role !== "examiner" &&
+    session.user.role !== "proctor"
+  )
     redirect("/");
 
   const attempt = await prisma.examAttempt.findUnique({
@@ -124,6 +146,12 @@ export const getResultDetail = async (attemptId: string) => {
     attempt.exam.createdById !== session.user.id
   ) {
     redirect("/examiner/results");
+  }
+
+  if (session.user.role === "proctor") {
+    const proctorExamIds = await getProctorExamIds(session.user.id);
+    if (!proctorExamIds.includes(attempt.examId))
+      redirect("/proctor/results" as never);
   }
 
   return attempt;
