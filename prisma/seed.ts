@@ -62,187 +62,148 @@ async function main() {
     await upsertUser(email, name, role, email);
   }
 
-  // Migrate existing inline questions to bank questions
-  const existingQuestions = await prisma.question.findMany({
-    include: { exam: { select: { createdById: true } } },
+  const admin = await prisma.user.findFirst({ where: { role: "admin" } });
+  const examiner = await prisma.user.findFirst({
+    where: { role: "examiner" },
   });
 
-  for (const q of existingQuestions) {
-    const existingBank = await prisma.bankQuestion.findFirst({
-      where: { text: q.text, type: q.type },
+  if (!admin || !examiner) return;
+
+  const seedQuestion = async (
+    text: string,
+    type: string,
+    answer: string,
+    points: number,
+    createdById: string,
+    options?: string,
+  ) => {
+    const existing = await prisma.bankQuestion.findFirst({
+      where: { text, type, createdById },
     });
-    if (!existingBank) {
+
+    if (existing) {
+      await prisma.bankQuestion.update({
+        where: { id: existing.id },
+        data: { text, type, options: options ?? null, answer, points },
+      });
+    } else {
       await prisma.bankQuestion.create({
         data: {
-          text: q.text,
-          type: q.type,
-          options: q.options,
-          answer: q.answer,
-          points: q.points,
-          createdById: q.exam.createdById,
+          text,
+          type,
+          options: options ?? null,
+          answer,
+          points,
+          createdById,
         },
       });
     }
+  };
+
+  const adminQuestions: {
+    text: string;
+    type: string;
+    options?: string;
+    answer: string;
+    points: number;
+  }[] = [
+    {
+      text: "Which of the following are primitive data types in JavaScript?",
+      type: "multiple_choice",
+      options: "String\nNumber\nObject\nBoolean\nArray",
+      answer: "String\nNumber\nBoolean",
+      points: 2,
+    },
+    {
+      text: "What does the 'this' keyword refer to in a JavaScript arrow function?",
+      type: "single_choice",
+      options:
+        "The function itself\nThe global object\nThe enclosing lexical context\nThe new instance",
+      answer: "The enclosing lexical context",
+      points: 2,
+    },
+    {
+      text: "TypeScript is a superset of JavaScript that adds optional static typing.",
+      type: "true_false",
+      options: "True\nFalse",
+      answer: "True",
+      points: 1,
+    },
+    {
+      text: "What does REST stand for in web API design?",
+      type: "short_answer",
+      answer: "Representational, State, Transfer",
+      points: 2,
+    },
+    {
+      text: "Which time complexity does an efficient sorting algorithm like merge sort have?",
+      type: "single_choice",
+      options: "O(n)\nO(n²)\nO(n log n)\nO(log n)",
+      answer: "O(n log n)",
+      points: 2,
+    },
+  ];
+
+  const examinerQuestions: {
+    text: string;
+    type: string;
+    options?: string;
+    answer: string;
+    points: number;
+  }[] = [
+    {
+      text: "In OOP, encapsulation refers to bundling data with the methods that operate on it.",
+      type: "true_false",
+      options: "True\nFalse",
+      answer: "True",
+      points: 1,
+    },
+    {
+      text: "Which design pattern ensures a class has only one instance?",
+      type: "single_choice",
+      options: "Factory\nObserver\nSingleton\nDecorator",
+      answer: "Singleton",
+      points: 2,
+    },
+    {
+      text: "What Git command is used to temporarily save uncommitted changes?",
+      type: "short_answer",
+      answer: "stash",
+      points: 1,
+    },
+    {
+      text: "Which of the following are JavaScript runtime environments?",
+      type: "multiple_choice",
+      options: "Node.js\nDeno\nPython\nBun",
+      answer: "Node.js\nDeno\nBun",
+      points: 2,
+    },
+    {
+      text: "What does ACID stand for in database transactions?",
+      type: "single_choice",
+      options:
+        "Atomicity, Consistency, Isolation, Durability\nAvailability, Consistency, Isolation, Durability\nAtomicity, Consistency, Integrity, Durability\nAtomicity, Control, Isolation, Distribution",
+      answer: "Atomicity, Consistency, Isolation, Durability",
+      points: 2,
+    },
+  ];
+
+  for (const q of adminQuestions) {
+    await seedQuestion(q.text, q.type, q.answer, q.points, admin.id, q.options);
   }
 
-  // Seed sample bank questions if bank is empty
-  const bankCount = await prisma.bankQuestion.count();
-  if (bankCount === 0) {
-    const admin = await prisma.user.findFirst({
-      where: { role: "admin" },
-    });
-    if (!admin) return;
-
-    const sampleQuestions = [
-      // --- General Knowledge (10) ---
-      {
-        text: "What is the capital of France?",
-        type: "single_choice",
-        options: "London\nBerlin\nParis\nMadrid",
-        answer: "Paris",
-        points: 1,
-      },
-      {
-        text: "The Earth is flat.",
-        type: "true_false",
-        options: "True\nFalse",
-        answer: "False",
-        points: 1,
-      },
-      {
-        text: "What is the chemical symbol for water?",
-        type: "short_answer",
-        answer: "H2O",
-        points: 1,
-      },
-      {
-        text: "Which planet is known as the Red Planet?",
-        type: "single_choice",
-        options: "Venus\nMars\nJupiter\nSaturn",
-        answer: "Mars",
-        points: 1,
-      },
-      {
-        text: "What is the largest ocean on Earth?",
-        type: "single_choice",
-        options: "Atlantic\nIndian\nPacific\nArctic",
-        answer: "Pacific",
-        points: 1,
-      },
-      {
-        text: "Which of the following are fruit?",
-        type: "multiple_choice",
-        options: "Apple\nCarrot\nBanana\nBroccoli",
-        answer: "Apple\nBanana",
-        points: 2,
-      },
-      {
-        text: "Light travels faster than sound.",
-        type: "true_false",
-        options: "True\nFalse",
-        answer: "True",
-        points: 1,
-      },
-      {
-        text: "Who wrote 'Romeo and Juliet'?",
-        type: "short_answer",
-        answer: "William Shakespeare",
-        points: 2,
-      },
-      {
-        text: "What is the powerhouse of the cell?",
-        type: "single_choice",
-        options: "Nucleus\nMitochondria\nRibosome\nGolgi apparatus",
-        answer: "Mitochondria",
-        points: 1,
-      },
-      {
-        text: "The Great Wall of China is visible from space.",
-        type: "true_false",
-        options: "True\nFalse",
-        answer: "False",
-        points: 1,
-      },
-      // --- Programming (10) ---
-      {
-        text: "Which of the following are programming languages?",
-        type: "multiple_choice",
-        options: "Python\nHTML\nJavaScript\nCSS",
-        answer: "Python\nJavaScript",
-        points: 2,
-      },
-      {
-        text: "What does SQL stand for?",
-        type: "single_choice",
-        options:
-          "Simple Query Language\nStructured Query Language\nStandard Question Language\nSequential Query Logic",
-        answer: "Structured Query Language",
-        points: 1,
-      },
-      {
-        text: "What is 2 + 2 in JavaScript?",
-        type: "short_answer",
-        answer: "4",
-        points: 1,
-      },
-      {
-        text: "A variable declared with 'const' cannot be reassigned.",
-        type: "true_false",
-        options: "True\nFalse",
-        answer: "True",
-        points: 1,
-      },
-      {
-        text: "Which data structure uses LIFO order?",
-        type: "single_choice",
-        options: "Queue\nStack\nArray\nLinked List",
-        answer: "Stack",
-        points: 1,
-      },
-      {
-        text: "Which of the following are relational databases?",
-        type: "multiple_choice",
-        options: "PostgreSQL\nMongoDB\nMySQL\nRedis",
-        answer: "PostgreSQL\nMySQL",
-        points: 2,
-      },
-      {
-        text: "What does API stand for?",
-        type: "short_answer",
-        answer: "Application Programming Interface",
-        points: 2,
-      },
-      {
-        text: "In Python, 'len()' returns the length of a sequence.",
-        type: "true_false",
-        options: "True\nFalse",
-        answer: "True",
-        points: 1,
-      },
-      {
-        text: "Which language is primarily used for styling web pages?",
-        type: "single_choice",
-        options: "HTML\nJavaScript\nCSS\nPython",
-        answer: "CSS",
-        points: 1,
-      },
-      {
-        text: "Which of the following are version control systems?",
-        type: "multiple_choice",
-        options: "Git\nSVN\nDocker\nMercurial",
-        answer: "Git\nSVN\nMercurial",
-        points: 2,
-      },
-    ];
-
-    for (const sq of sampleQuestions) {
-      await prisma.bankQuestion.create({
-        data: { ...sq, createdById: admin.id },
-      });
-    }
-
-    console.log("Seeded sample bank questions");
+  for (const q of examinerQuestions) {
+    await seedQuestion(
+      q.text,
+      q.type,
+      q.answer,
+      q.points,
+      examiner.id,
+      q.options,
+    );
   }
+
+  console.log("Seeded 10 programming bank questions (5 admin, 5 examiner)");
 }
 
 main()

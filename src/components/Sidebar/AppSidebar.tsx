@@ -26,7 +26,7 @@ import {
   SidebarRail,
 } from "@/components/shadcnui/sidebar";
 import { Separator } from "@/components/shadcnui/separator";
-import type { NavGroup, NavItem } from "./nav-config";
+import { findMatchingNavItem, type NavGroup, type NavItem } from "./nav-config";
 
 const iconMap: Record<string, LucideIcon> = {
   LayoutDashboard: LayoutDashboardIcon,
@@ -40,12 +40,9 @@ const iconMap: Record<string, LucideIcon> = {
 const AppSidebar = ({ groups }: { groups: NavGroup[] }) => {
   const pathname = usePathname().replace(/\/$/, "") || "/";
 
-  const isActive = (item: NavItem) => {
-    if (item.notActiveFor?.includes(pathname)) return false;
-    if (item.exact) return pathname === item.url;
-    if (pathname === item.url) return true;
-    return pathname.startsWith(item.url + "/");
-  };
+  const allItems = groups.flatMap((g) => g.items);
+  const matchedItem = findMatchingNavItem(pathname, allItems);
+  const isActive = (item: NavItem) => matchedItem === item;
 
   return (
     <Sidebar collapsible="icon">

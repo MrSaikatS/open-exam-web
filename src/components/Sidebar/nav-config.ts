@@ -11,6 +11,20 @@ export type NavGroup = {
   items: NavItem[];
 };
 
+export function findMatchingNavItem(
+  pathname: string,
+  items: NavItem[],
+): NavItem | undefined {
+  const normalized = pathname.replace(/\/$/, "") || "/";
+  for (const item of items) {
+    if (item.notActiveFor?.includes(normalized)) continue;
+    if (normalized === item.url) return item;
+    if (item.exact) continue;
+    if (normalized.startsWith(item.url + "/")) return item;
+  }
+  return undefined;
+}
+
 export const adminNav: NavGroup[] = [
   {
     label: "Overview",

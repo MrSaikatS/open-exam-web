@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { format } from "date-fns";
 import { getStudentResults } from "@/server/actions/studentExam";
 import {
   Card,
@@ -77,7 +78,7 @@ const StudentResultsPage = async () => {
                     <span>{r._count.answers} answers</span>
                     <span>
                       {r.submittedAt ?
-                        new Date(r.submittedAt).toLocaleDateString()
+                        format(r.submittedAt, "MMM d, yyyy")
                       : "—"}
                     </span>
                   </div>

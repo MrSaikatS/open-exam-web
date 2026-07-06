@@ -81,7 +81,7 @@ Edit `.env` with your values:
 # Run migrations and generate Prisma client
 bun migrate
 
-# Seed with test data (4 users + 8 sample bank questions)
+# Seed with test data (4 users + 10 programming bank questions)
 bun seed
 ```
 
@@ -133,7 +133,7 @@ After running `bun seed`, you can log in with:
 2. **Questions** — Build a question bank, then import questions into exams (copy-on-import)
 3. **Assign** — Assign exams to students
 4. **Proctor** — Proctors monitor student progress in real-time (2s polling)
-5. **Take** — Students take exams with auto-save, question navigation, and auto-submit on timer expiry
+5. **Take** — Students take exams with auto-save, question navigation, and auto-submit on timer expiry. Time windows (`startTime`/`endTime`) are enforced server-side.
 6. **Grade** — Auto-grading for multiple choice, true/false, short answer (keyword-based)
 7. **Review** — Students and examiners can review results per-question
 
@@ -166,7 +166,7 @@ src/
 │   ├── auth.ts             # Better Auth server config
 │   ├── auth-client.ts      # Better Auth client config
 │   └── zodSchema.ts        # All Zod schemas and inferred types
-└── server/actions/         # Server actions (exam, bank, studentExam, assignment, results)
+└── server/actions/         # Server actions (exam, bank, studentExam, assignment, proctor, results)
 ```
 
 ## 🗄️ Database Models (10)
@@ -194,9 +194,10 @@ src/
 - Question options/answers stored as **newline-separated text** (not JSON)
 - Multiple choice student answers: option texts joined with `\n`
 - Short answer grading: comma-separated keywords with proportional scoring
+- Exam time windows (`startTime`/`endTime`) enforced server-side in `startExam` and `saveAnswer`
 - Server actions in `src/server/actions/` — each file is `"use server"` with session + ownership checks
 - Exam questions use **bank-first approach**: import copies from bank, edit/delete on exam copy only
-- Save navigation: `goTo()` is fire-and-forget; `saveCurrentAnswer()` runs in background
+- All date work uses `date-fns` (`format`, `isAfter`, `isBefore`) — avoid native `Date` operators and `toLocaleDateString`
 - Form pattern: react-hook-form + `Controller` + Zod resolver + shadcn `Field`/`Input`
 
 ## 🤝 Contributing

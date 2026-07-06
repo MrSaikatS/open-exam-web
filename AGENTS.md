@@ -26,14 +26,14 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 # Commands with quirks
 
-| Command         | What it does                                 | Quirk                                                                                                                                                                                                                                                      |
-| --------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bun dev`       | `next dev` (Turbopack)                       |                                                                                                                                                                                                                                                            |
-| `bun migrate`   | `prisma migrate dev && prisma generate`      | Use this, not raw `prisma db push`. Prompts for migration name interactively.                                                                                                                                                                              |
-| `bun studio`    | `prisma studio --browser none`               | Headless — open the printed URL manually                                                                                                                                                                                                                   |
-| `bun seed`      | `prisma db seed` (runs `tsx prisma/seed.ts`) | Seeds 4 users: admin@example.com, examiner@example.com, proctor@example.com, student@example.com (password = email). Admin email overridable via `BETTER_AUTH_SEED_ADMIN_EMAIL`. Also migrates existing questions to bank + seeds 8 sample bank questions. |
-| `bun add`       | Bun install                                  | Works, also `bunx` for one-off commands                                                                                                                                                                                                                    |
-| `bun typecheck` | `tsc --noEmit`                               | Use instead of `next build` for routine TS checks                                                                                                                                                                                                          |
+| Command         | What it does                                 | Quirk                                                                                                                                                                                                                                        |
+| --------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun dev`       | `next dev` (Turbopack)                       |                                                                                                                                                                                                                                              |
+| `bun migrate`   | `prisma migrate dev && prisma generate`      | Use this, not raw `prisma db push`. Prompts for migration name interactively.                                                                                                                                                                |
+| `bun studio`    | `prisma studio --browser none`               | Headless — open the printed URL manually                                                                                                                                                                                                     |
+| `bun seed`      | `prisma db seed` (runs `tsx prisma/seed.ts`) | Seeds 4 users (password = email). Admin email overridable via `BETTER_AUTH_SEED_ADMIN_EMAIL`. Seeds 10 programming bank questions (5 admin + 5 examiner) via `seedQuestion()` helper — upserts by `{ text, type, createdById }` on each run. |
+| `bun add`       | Bun install                                  | Works, also `bunx` for one-off commands                                                                                                                                                                                                      |
+| `bun typecheck` | `tsc --noEmit`                               | Use instead of `next build` for routine TS checks                                                                                                                                                                                            |
 
 # Prisma
 
@@ -74,19 +74,22 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ```
 (private)/                  # Auth gate → redirects to / if unauthenticated
 ├── admin/                  # role=admin only
-│   ├── page.tsx            # Dashboard (stub)
-│   ├── exams/              # CRUD — implemented
-│   ├── questions/          # Question bank — implemented (list, new, [id])
-│   ├── results/            # stub
-│   └── users/              # stub
+│   ├── page.tsx            # Dashboard
+│   ├── exams/              # CRUD + assign + assign-proctor + per-exam results
+│   ├── questions/          # Question bank (list, new, [id])
+│   ├── results/            # List + detail
+│   └── users/              # User management
 ├── examiner/               # role=examiner only
-│   ├── page.tsx            # Dashboard (stub)
-│   ├── exams/              # CRUD — implemented (scoped to own exams)
-│   ├── questions/          # Question bank — implemented (no delete)
-│   └── results/            # stub
-├── proctor/                # all stubs
+│   ├── page.tsx            # Dashboard
+│   ├── exams/              # CRUD (scoped to own exams) + assign + results
+│   ├── questions/          # Question bank (list, new, [id], no delete)
+│   └── results/            # List + detail
+├── proctor/                # role=proctor only
+│   ├── page.tsx            # Dashboard
+│   ├── exams/              # List + live monitor (ProctorExamMonitor, 2s polling)
+│   └── results/            # List + detail
 └── student/                # role=student only
-    ├── page.tsx            # Dashboard (stub)
+    ├── page.tsx            # Dashboard
     ├── exams/              # List + take exam (ExamPlayer)
     └── results/            # List + detail (ResultReview)
 ```
@@ -101,6 +104,7 @@ All in `src/server/actions/`, each is `"use server"`, checks session + role owne
 | `bank.ts`        | `getBankQuestions`, `getBankQuestionById`, `createBankQuestion`, `updateBankQuestion`, `deleteBankQuestion` (admin-only), `importBankQuestions(examId, questionIds[])` |
 | `studentExam.ts` | `getStudentExams`, `startExam`, `getAttemptQuestions`, `saveAnswer`, `submitExam`, `getStudentResults`, `getResultDetail`                                              |
 | `assignment.ts`  | `assignExam`, `unassignExam`, `getAssignedStudents`, `getAvailableStudents`                                                                                            |
+| `proctor.ts`     | `assignProctor`, `unassignProctor`, `getAssignedProctors`, `getAvailableProctors`, `getProctorExams`, `getExamProgress`                                                |
 | `results.ts`     | `getExamResults`, `getAllResults`, `getResultDetail` (admin/examiner view)                                                                                             |
 
 # Exam CRUD conventions
@@ -121,12 +125,24 @@ All in `src/server/actions/`, each is `"use server"`, checks session + role owne
 - `ResultReview` (`src/components/Student/ResultReview.tsx`): shows per-question correct/wrong/unanswered styling. Unanswered questions get `border-muted-foreground/20 bg-muted/30`.
 - `saveAnswer` server action from client: use dynamic import to avoid "Expected 2 arguments" TS error — `import("@/server/actions/studentExam").then((m) => m.saveAnswer(...))`.
 
+# Exam time-window enforcement
+
+- `Exam.startTime` / `Exam.endTime` are enforced server-side in `startExam` (blocks new attempts outside window) and `saveAnswer` (blocks saving after endTime).
+- In-progress attempts whose `endTime` has passed are auto-submitted when the student tries to resume (in `startExam`).
+- Student exams list shows "Scheduled" / "Ended" badges and disables Start outside the window. Dashboard has separate "Upcoming Exams" section.
+
 # Styling & formatting
 
 - Tailwind v4: all theme config in `globals.css` via `@theme` block. No `tailwind.config.ts`.
 - Prettier: `singleAttributePerLine: true`, `bracketSameLine: true`, `experimentalTernaries: true`, `prettier-plugin-tailwindcss`. Match existing style.
 - shadcn `Input` from `@base-ui/react/input` has strict value types — `Controller` fields with `z.coerce.number()` need explicit `value={String(field.value ?? "")}`.
 - Prefer `variant="outline"` over `variant="ghost"`; prefer `size="lg"` over `size="sm"`, `size="icon-lg"` over `size="icon-sm"`.
+
+# Date handling
+
+- Use `date-fns` for all date work: `format(date, "MMM d, yyyy")` for display, `isAfter`/`isBefore` for comparisons.
+- Do NOT use native `Date` comparison operators or `toLocaleDateString`.
+- Matching the existing `"MMM d, yyyy"` convention used in admin/examiner pages.
 
 # Zod schemas
 
@@ -156,6 +172,12 @@ Form: `<form onSubmit={handleSubmit(handler)} noValidate>`. Submit button shows 
 
 - `@/*` → `./src/*`
 - `@generated/*` → `./generated/*` (Prisma client only)
+
+# Top bar page title
+
+- `SidebarLayout` (`src/components/Sidebar/SidebarLayout.tsx`) derives the current page title from `usePathname()` → `nav-config.ts` and shows it in the top bar between the hamburger and avatar.
+- Matching logic mirrors `AppSidebar.isActive`: exact match wins, `exact: true` items never match via `startsWith`, `notActiveFor` excludes false positives.
+- Adding a new route? Add a nav item entry in `nav-config.ts` so the top bar shows the right title.
 
 # Misc
 

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { format, isAfter } from "date-fns";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import prisma from "@/lib/database/dbClient";
@@ -12,6 +13,7 @@ import { Button } from "@/components/shadcnui/button";
 import { Badge } from "@/components/shadcnui/badge";
 import { StatCard } from "@/components/Dashboard/StatCard";
 import {
+  ClockIcon,
   FileTextIcon,
   GraduationCapIcon,
   PlayIcon,
@@ -66,13 +68,25 @@ const StudentDashboard = async () => {
     }),
   ]);
 
+  const now = new Date();
   const completedAttempts = attempts.filter(
     (a) => a.status === "submitted" || a.status === "graded",
   );
   const inProgressAttempts = attempts.filter((a) => a.status === "in_progress");
   const attemptExamIds = new Set(attempts.map((a) => a.examId));
   const pendingExams = assignments.filter(
-    (a) => a.exam.status === "published" && !attemptExamIds.has(a.examId),
+    (a) =>
+      a.exam.status === "published" &&
+      !attemptExamIds.has(a.examId) &&
+      (!a.exam.startTime || !isAfter(a.exam.startTime, now)) &&
+      (!a.exam.endTime || isAfter(a.exam.endTime, now)),
+  );
+  const upcomingExams = assignments.filter(
+    (a) =>
+      a.exam.status === "published" &&
+      !attemptExamIds.has(a.examId) &&
+      a.exam.startTime &&
+      isAfter(a.exam.startTime, now),
   );
 
   const avgScore =
@@ -138,8 +152,8 @@ const StudentDashboard = async () => {
                     <p className="font-medium">{a.exam.title}</p>
                     <p className="text-muted-foreground text-xs">
                       {a.exam.duration} min
-                      {a.exam.startTime &&
-                        ` · starts ${a.exam.startTime.toLocaleDateString()}`}
+                      {a.exam.endTime &&
+                        ` · ends ${format(a.exam.endTime, "MMM d, yyyy")}`}
                     </p>
                   </div>
                   <Link href={`/student/exams/${a.exam.id}` as Route}>
@@ -147,6 +161,37 @@ const StudentDashboard = async () => {
                       <PlayIcon className="size-4" /> Start
                     </Button>
                   </Link>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {upcomingExams.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Upcoming Exams</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3">
+              {upcomingExams.map((a) => (
+                <div
+                  key={a.examId}
+                  className="border-border flex items-center justify-between gap-4 rounded-3xl border p-4">
+                  <div>
+                    <p className="font-medium">{a.exam.title}</p>
+                    <p className="text-muted-foreground text-xs">
+                      {a.exam.duration} min
+                      {a.exam.startTime &&
+                        ` · starts ${format(a.exam.startTime, "MMM d, yyyy")}`}
+                    </p>
+                  </div>
+                  <Button
+                    size="lg"
+                    disabled>
+                    <ClockIcon className="size-4" /> Scheduled
+                  </Button>
                 </div>
               ))}
             </div>
@@ -194,7 +239,9 @@ const StudentDashboard = async () => {
                   <div>
                     <p className="text-sm font-medium">{a.exam.title}</p>
                     <p className="text-muted-foreground text-xs">
-                      {a.submittedAt?.toLocaleDateString()}
+                      {a.submittedAt ?
+                        format(a.submittedAt, "MMM d, yyyy")
+                      : "—"}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
