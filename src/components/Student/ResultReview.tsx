@@ -1,5 +1,6 @@
 "use client";
 
+import { format } from "date-fns";
 import { CheckCircle2Icon, MinusCircleIcon, XCircleIcon } from "lucide-react";
 
 type Answer = {
@@ -64,7 +65,7 @@ export const ResultReview = ({
 
       {submittedAt && (
         <p className="text-muted-foreground text-sm">
-          Submitted at {new Date(submittedAt).toLocaleString()}
+          Submitted at {format(new Date(submittedAt), "MMM d, yyyy, h:mm a")}
         </p>
       )}
 

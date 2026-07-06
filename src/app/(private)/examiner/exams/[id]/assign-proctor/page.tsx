@@ -29,8 +29,8 @@ const ExaminerAssignProctorPage = async ({
       <div className="flex items-center gap-4">
         <Link href={`/examiner/exams/${id}`}>
           <Button
-            variant="ghost"
-            size="icon">
+            variant="outline"
+            size="icon-lg">
             <ArrowLeftIcon className="size-4" />
           </Button>
         </Link>

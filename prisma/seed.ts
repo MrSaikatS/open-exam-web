@@ -67,7 +67,13 @@ async function main() {
     where: { role: "examiner" },
   });
 
-  if (!admin || !examiner) return;
+  if (!admin || !examiner) {
+    console.warn(
+      "Skipping question seed: admin or examiner user not found. " +
+        "Run `bun seed` again after the users are created.",
+    );
+    return;
+  }
 
   const seedQuestion = async (
     text: string,
