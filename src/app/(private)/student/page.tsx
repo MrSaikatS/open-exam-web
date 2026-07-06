@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { format } from "date-fns";
+import { format, isAfter } from "date-fns";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import prisma from "@/lib/database/dbClient";
@@ -78,15 +78,15 @@ const StudentDashboard = async () => {
     (a) =>
       a.exam.status === "published" &&
       !attemptExamIds.has(a.examId) &&
-      (!a.exam.startTime || a.exam.startTime <= now) &&
-      (!a.exam.endTime || a.exam.endTime > now),
+      (!a.exam.startTime || !isAfter(a.exam.startTime, now)) &&
+      (!a.exam.endTime || isAfter(a.exam.endTime, now)),
   );
   const upcomingExams = assignments.filter(
     (a) =>
       a.exam.status === "published" &&
       !attemptExamIds.has(a.examId) &&
       a.exam.startTime &&
-      a.exam.startTime > now,
+      isAfter(a.exam.startTime, now),
   );
 
   const avgScore =

@@ -132,7 +132,7 @@ async function main() {
     {
       text: "What does REST stand for in web API design?",
       type: "short_answer",
-      answer: "Representational State Transfer",
+      answer: "Representational, State, Transfer",
       points: 2,
     },
     {

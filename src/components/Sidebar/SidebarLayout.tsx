@@ -19,18 +19,14 @@ import {
   DropdownMenuSeparator,
 } from "@/components/shadcnui/dropdown-menu";
 import { AppSidebar } from "./AppSidebar";
-import type { NavGroup } from "./nav-config";
+import { findMatchingNavItem, type NavGroup } from "./nav-config";
 import { authClient } from "@/lib/auth-client";
 
 const getPageTitle = (pathname: string, groups: NavGroup[]): string => {
-  const normalized = pathname.replace(/\/$/, "") || "/";
   const allItems = groups.flatMap((g) => g.items);
-  for (const item of allItems) {
-    if (item.notActiveFor?.includes(normalized)) continue;
-    if (normalized === item.url) return item.title;
-    if (item.exact) continue;
-    if (normalized.startsWith(item.url + "/")) return item.title;
-  }
+  const match = findMatchingNavItem(pathname, allItems);
+  if (match) return match.title;
+  const normalized = pathname.replace(/\/$/, "") || "/";
   const segments = normalized.split("/").filter(Boolean);
   const last = segments[segments.length - 1];
   return last ?

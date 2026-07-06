@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { format } from "date-fns";
+import { format, isAfter, isBefore } from "date-fns";
 import { getStudentExams } from "@/server/actions/studentExam";
 import { Badge } from "@/components/shadcnui/badge";
 import { Button } from "@/components/shadcnui/button";
@@ -27,8 +27,9 @@ const getTimeStatus = (exam: {
 }): TimeStatus => {
   if (exam.status !== "published") return null;
   const now = new Date();
-  if (exam.startTime && now < exam.startTime) return "not_yet_available";
-  if (exam.endTime && now > exam.endTime) return "ended";
+  if (exam.startTime && isBefore(now, exam.startTime))
+    return "not_yet_available";
+  if (exam.endTime && isAfter(now, exam.endTime)) return "ended";
   return "available";
 };
 
