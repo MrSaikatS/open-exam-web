@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ClockIcon, UsersIcon } from "lucide-react";
+import { toast } from "react-toastify";
 import { Badge } from "@/components/shadcnui/badge";
 import { Card } from "@/components/shadcnui/card";
 import { getExamProgress } from "@/server/actions/proctor";
@@ -38,6 +39,7 @@ export const ProctorExamMonitor = ({
 
   const fetchProgress = useCallback(async () => {
     try {
+      toast.dismiss("proctor-poll-error");
       const fresh = await getExamProgress(examId);
       setData(fresh);
       setLastUpdated(new Date());
@@ -48,7 +50,9 @@ export const ProctorExamMonitor = ({
         allSubmittedRef.current = true;
       }
     } catch {
-      // Silently ignore polling errors to avoid disruption
+      toast.error("Failed to fetch exam progress", {
+        toastId: "proctor-poll-error",
+      });
     }
   }, [examId]);
 

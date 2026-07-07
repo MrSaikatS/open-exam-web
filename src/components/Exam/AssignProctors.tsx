@@ -5,16 +5,6 @@ import { useState } from "react";
 import { toast } from "react-toastify";
 import { assignProctor, unassignProctor } from "@/server/actions/proctor";
 import { Button } from "../shadcnui/button";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "../shadcnui/dialog";
 
 type Proctor = {
   id: string;
@@ -45,7 +35,6 @@ const AssignProctors = ({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [removing, setRemoving] = useState<string | null>(null);
-  const [removeTarget, setRemoveTarget] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(availableProctors.length > 0);
 
   const toggleSelected = (id: string) => {
@@ -58,36 +47,46 @@ const AssignProctors = ({
   const handleAssign = async () => {
     if (selected.size === 0) return;
     setLoading(true);
-    await assignProctor(examId, Array.from(selected));
-    const added = available.filter((p) => selected.has(p.id));
-    setAssignments((prev) => [
-      ...added.map((p) => ({
-        id: "",
-        proctorId: p.id,
-        proctor: p,
-        assignedAt: new Date(),
-      })),
-      ...prev,
-    ]);
-    setAvailable((prev) => prev.filter((p) => !selected.has(p.id)));
-    setSelected(new Set());
+    try {
+      await assignProctor(examId, Array.from(selected));
+      const added = available.filter((p) => selected.has(p.id));
+      setAssignments((prev) => [
+        ...added.map((p) => ({
+          id: "",
+          proctorId: p.id,
+          proctor: p,
+          assignedAt: new Date(),
+        })),
+        ...prev,
+      ]);
+      setAvailable((prev) => prev.filter((p) => !selected.has(p.id)));
+      setSelected(new Set());
+      toast.success(`${added.length} proctor(s) assigned`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to assign proctors");
+    }
     setLoading(false);
-    toast.success(`${added.length} proctor(s) assigned`);
   };
 
   const handleUnassign = async (proctorId: string) => {
+    if (!confirm("Remove this proctor from the exam?")) return;
     setRemoving(proctorId);
-    setRemoveTarget(null);
-    await unassignProctor(examId, proctorId);
-    const removed = assignments.find((a) => a.proctorId === proctorId);
-    if (removed) {
-      setAvailable((prev) =>
-        [...prev, removed.proctor].sort((a, b) => a.name.localeCompare(b.name)),
-      );
+    try {
+      await unassignProctor(examId, proctorId);
+      const removed = assignments.find((a) => a.proctorId === proctorId);
+      if (removed) {
+        setAvailable((prev) =>
+          [...prev, removed.proctor].sort((a, b) =>
+            a.name.localeCompare(b.name),
+          ),
+        );
+      }
+      setAssignments((prev) => prev.filter((a) => a.proctorId !== proctorId));
+      toast.success("Proctor removed");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to remove proctor");
     }
-    setAssignments((prev) => prev.filter((a) => a.proctorId !== proctorId));
     setRemoving(null);
-    toast.success("Proctor removed");
   };
 
   return (
@@ -107,48 +106,15 @@ const AssignProctors = ({
                   {a.proctor.email}
                 </span>
               </div>
-              <Dialog
-                open={removeTarget === a.proctorId}
-                onOpenChange={(open) =>
-                  setRemoveTarget(open ? a.proctorId : null)
-                }>
-                <DialogTrigger
-                  render={
-                    <Button
-                      variant="outline"
-                      size="icon-xs"
-                      disabled={removing === a.proctorId}>
-                      {removing === a.proctorId ?
-                        <Loader2Icon className="size-3 animate-spin" />
-                      : <Trash2Icon className="text-destructive size-3" />}
-                    </Button>
-                  }
-                />
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Remove Proctor</DialogTitle>
-                    <DialogDescription>
-                      Remove {a.proctor.name} from this exam? They will no
-                      longer be able to monitor it.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <DialogFooter showCloseButton>
-                    <DialogClose
-                      render={
-                        <Button
-                          variant="destructive"
-                          size="lg"
-                          onClick={() => handleUnassign(a.proctorId)}
-                          disabled={removing === a.proctorId}>
-                          {removing === a.proctorId ?
-                            <Loader2Icon className="size-4 animate-spin" />
-                          : "Remove"}
-                        </Button>
-                      }
-                    />
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+              <Button
+                variant="outline"
+                size="icon-xs"
+                onClick={() => handleUnassign(a.proctorId)}
+                disabled={removing === a.proctorId}>
+                {removing === a.proctorId ?
+                  <Loader2Icon className="size-3 animate-spin" />
+                : <Trash2Icon className="text-destructive size-3" />}
+              </Button>
             </div>
           ))}
         </div>

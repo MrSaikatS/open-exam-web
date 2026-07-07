@@ -19,7 +19,6 @@ import { Field, FieldError, FieldLabel } from "../shadcnui/field";
 import { Input } from "../shadcnui/input";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -92,10 +91,14 @@ const EditQuestionForm = ({
     fd.set("answer", data.answer ?? "");
     fd.set("points", String(data.points));
 
-    await updateQuestion(question.id, fd);
-    toast.success("Question updated");
-    reset();
-    onDone();
+    try {
+      await updateQuestion(question.id, fd);
+      toast.success("Question updated");
+      reset();
+      onDone();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update question");
+    }
   };
 
   return (
@@ -263,10 +266,16 @@ const ImportBankDialog = ({ examId }: { examId: string }) => {
   const handleImport = async () => {
     if (selected.size === 0) return;
     setLoading(true);
-    await importBankQuestions(examId, Array.from(selected));
-    toast.success(`${selected.size} question(s) imported`);
+    try {
+      await importBankQuestions(examId, Array.from(selected));
+      toast.success(`${selected.size} question(s) imported`);
+      setOpen(false);
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Failed to import questions",
+      );
+    }
     setLoading(false);
-    setOpen(false);
   };
 
   const filtered = bankQuestions.filter((q) =>
@@ -360,14 +369,16 @@ const ImportBankDialog = ({ examId }: { examId: string }) => {
 
 const QuestionsManager = ({ examId, questions }: QuestionsManagerProps) => {
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [loadingDelete, setLoadingDelete] = useState<string | null>(null);
 
   const handleDelete = async (id: string) => {
     setLoadingDelete(id);
-    setDeleteId(null);
-    await deleteQuestion(id);
-    toast.success("Question deleted");
+    try {
+      await deleteQuestion(id);
+      toast.success("Question deleted");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to delete question");
+    }
     setLoadingDelete(null);
   };
 
@@ -422,52 +433,18 @@ const QuestionsManager = ({ examId, questions }: QuestionsManagerProps) => {
                   onClick={() => setEditingId(q.id)}>
                   <PencilIcon className="size-3" />
                 </Button>
-                <Dialog
-                  open={deleteId === q.id}
-                  onOpenChange={(open) => setDeleteId(open ? q.id : null)}>
-                  <DialogTrigger
-                    render={
-                      <Button
-                        variant="outline"
-                        size="icon-xs"
-                        disabled={loadingDelete === q.id}>
-                        {loadingDelete === q.id ?
-                          <Loader2Icon className="size-3 animate-spin" />
-                        : <Trash2Icon className="text-destructive size-3" />}
-                      </Button>
-                    }
-                  />
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Delete Question</DialogTitle>
-                      <DialogDescription>
-                        Remove this question from the exam. This does not affect
-                        the question bank.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter showCloseButton>
-                      <DialogClose
-                        render={
-                          <Button
-                            variant="destructive"
-                            size="lg"
-                            onClick={() => handleDelete(q.id)}
-                            disabled={loadingDelete === q.id}>
-                            {loadingDelete === q.id ?
-                              <>
-                                <Loader2Icon className="size-4 animate-spin" />{" "}
-                                Deleting...
-                              </>
-                            : <>
-                                <Trash2Icon className="size-4" /> Delete
-                              </>
-                            }
-                          </Button>
-                        }
-                      />
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                <Button
+                  variant="outline"
+                  size="icon-xs"
+                  onClick={() => {
+                    if (!confirm("Delete this question?")) return;
+                    handleDelete(q.id);
+                  }}
+                  disabled={loadingDelete === q.id}>
+                  {loadingDelete === q.id ?
+                    <Loader2Icon className="size-3 animate-spin" />
+                  : <Trash2Icon className="text-destructive size-3" />}
+                </Button>
               </div>
             </div>
           ))}

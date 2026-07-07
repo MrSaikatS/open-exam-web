@@ -1,16 +1,21 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import type { Route } from "next";
 import { examFormSchema, ExamFormType } from "@/lib/zodSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2Icon, SaveIcon } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
+import { toast } from "react-toastify";
 import { Button } from "../shadcnui/button";
 import { Field, FieldError, FieldLabel } from "../shadcnui/field";
 import { Input } from "../shadcnui/input";
 import { Textarea } from "../shadcnui/textarea";
 
 type ExamFormProps = {
-  action: (formData: FormData) => Promise<void>;
+  action: (
+    formData: FormData,
+  ) => Promise<void | { id: string; basePath: string }>;
   defaultValues?: Partial<ExamFormType>;
   submitLabel?: string;
 };
@@ -20,6 +25,7 @@ const ExamForm = ({
   defaultValues,
   submitLabel = "Save",
 }: ExamFormProps) => {
+  const router = useRouter();
   const {
     handleSubmit,
     control,
@@ -43,7 +49,14 @@ const ExamForm = ({
     fd.set("duration", String(data.duration));
     fd.set("startTime", data.startTime ?? "");
     fd.set("endTime", data.endTime ?? "");
-    await action(fd);
+    try {
+      const result = await action(fd);
+      if (result && "id" in result) {
+        router.push(`${result.basePath}/exams/${result.id}` as Route);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to save exam");
+    }
   };
 
   return (

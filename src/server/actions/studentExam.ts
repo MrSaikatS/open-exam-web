@@ -18,101 +18,117 @@ const getStudentSession = async () => {
 export const getStudentExams = async () => {
   const session = await getStudentSession();
 
-  const assignments = await prisma.examAssignment.findMany({
-    where: { userId: session.user.id },
-    include: {
-      exam: {
-        include: {
-          _count: { select: { questions: true } },
-          createdBy: { select: { name: true } },
+  try {
+    const assignments = await prisma.examAssignment.findMany({
+      where: { userId: session.user.id },
+      include: {
+        exam: {
+          include: {
+            _count: { select: { questions: true } },
+            createdBy: { select: { name: true } },
+          },
         },
       },
-    },
-    orderBy: { assignedAt: "desc" },
-  });
+      orderBy: { assignedAt: "desc" },
+    });
 
-  const examIds = assignments.map((a) => a.examId);
+    const examIds = assignments.map((a) => a.examId);
 
-  const attempts = await prisma.examAttempt.findMany({
-    where: { userId: session.user.id, examId: { in: examIds } },
-    select: {
-      examId: true,
-      status: true,
-      id: true,
-      autoScore: true,
-      totalScore: true,
-      maxScore: true,
-    },
-  });
+    const attempts = await prisma.examAttempt.findMany({
+      where: { userId: session.user.id, examId: { in: examIds } },
+      select: {
+        examId: true,
+        status: true,
+        id: true,
+        autoScore: true,
+        totalScore: true,
+        maxScore: true,
+      },
+    });
 
-  const attemptMap = new Map(attempts.map((a) => [a.examId, a]));
+    const attemptMap = new Map(attempts.map((a) => [a.examId, a]));
 
-  return assignments.map(({ exam }) => ({
-    ...exam,
-    attempt: attemptMap.get(exam.id) ?? null,
-  }));
+    return assignments.map(({ exam }) => ({
+      ...exam,
+      attempt: attemptMap.get(exam.id) ?? null,
+    }));
+  } catch {
+    throw new Error("Failed to fetch exams");
+  }
 };
 
 export const startExam = async (examId: string) => {
   const session = await getStudentSession();
 
-  const assignment = await prisma.examAssignment.findUnique({
-    where: { examId_userId: { examId, userId: session.user.id } },
-    include: { exam: true },
-  });
+  try {
+    const assignment = await prisma.examAssignment.findUnique({
+      where: { examId_userId: { examId, userId: session.user.id } },
+      include: { exam: true },
+    });
 
-  if (!assignment) throw new Error("You are not assigned to this exam");
-  if (assignment.exam.status !== "published")
-    throw new Error("This exam is not available");
+    if (!assignment) throw new Error("You are not assigned to this exam");
+    if (assignment.exam.status !== "published")
+      throw new Error("This exam is not available");
 
-  const existing = await prisma.examAttempt.findUnique({
-    where: { userId_examId: { userId: session.user.id, examId } },
-    include: { exam: { select: { endTime: true } } },
-  });
+    const existing = await prisma.examAttempt.findUnique({
+      where: { userId_examId: { userId: session.user.id, examId } },
+      include: { exam: { select: { endTime: true } } },
+    });
 
-  if (existing) {
-    if (
-      existing.status === "in_progress" &&
-      existing.exam.endTime &&
-      isAfter(new Date(), existing.exam.endTime)
-    ) {
-      await submitAttempt(existing.id, examId);
-      return prisma.examAttempt.findUnique({ where: { id: existing.id } });
+    if (existing) {
+      if (
+        existing.status === "in_progress" &&
+        existing.exam.endTime &&
+        isAfter(new Date(), existing.exam.endTime)
+      ) {
+        await submitAttempt(existing.id, examId);
+        return await prisma.examAttempt.findUnique({
+          where: { id: existing.id },
+        });
+      }
+      return existing;
     }
-    return existing;
+
+    const now = new Date();
+    if (assignment.exam.startTime && isBefore(now, assignment.exam.startTime))
+      throw new Error("This exam has not started yet");
+    if (assignment.exam.endTime && isAfter(now, assignment.exam.endTime))
+      throw new Error("This exam has ended");
+
+    const totalPoints = await prisma.question.aggregate({
+      where: { examId },
+      _sum: { points: true },
+    });
+
+    const attempt = await prisma.examAttempt.create({
+      data: {
+        userId: session.user.id,
+        examId,
+        maxScore: totalPoints._sum.points ?? 0,
+      },
+    });
+
+    return attempt;
+  } catch (e) {
+    if (e instanceof Error) throw e;
+    throw new Error("Failed to start exam");
   }
-
-  const now = new Date();
-  if (assignment.exam.startTime && isBefore(now, assignment.exam.startTime))
-    throw new Error("This exam has not started yet");
-  if (assignment.exam.endTime && isAfter(now, assignment.exam.endTime))
-    throw new Error("This exam has ended");
-
-  const totalPoints = await prisma.question.aggregate({
-    where: { examId },
-    _sum: { points: true },
-  });
-
-  const attempt = await prisma.examAttempt.create({
-    data: {
-      userId: session.user.id,
-      examId,
-      maxScore: totalPoints._sum.points ?? 0,
-    },
-  });
-
-  return attempt;
 };
 
 export const getAttemptQuestions = async (attemptId: string) => {
   const session = await getStudentSession();
 
-  const attempt = await prisma.examAttempt.findUnique({
-    where: { id: attemptId },
-    include: {
-      exam: { select: { title: true, duration: true, createdById: true } },
-    },
-  });
+  let attempt;
+  try {
+    attempt = await prisma.examAttempt.findUnique({
+      where: { id: attemptId },
+      include: {
+        exam: { select: { title: true, duration: true, createdById: true } },
+      },
+    });
+  } catch {
+    throw new Error("Failed to load exam questions");
+  }
 
   if (!attempt || attempt.userId !== session.user.id)
     redirect("/student/exams");
@@ -138,29 +154,34 @@ export const saveAnswer = async (
 ) => {
   const session = await getStudentSession();
 
-  const attempt = await prisma.examAttempt.findUnique({
-    where: { id: attemptId },
-    include: { exam: { select: { endTime: true } } },
-  });
-  if (!attempt || attempt.userId !== session.user.id)
-    throw new Error("Unauthorized");
-  if (attempt.status !== "in_progress")
-    throw new Error("Exam already submitted");
+  try {
+    const attempt = await prisma.examAttempt.findUnique({
+      where: { id: attemptId },
+      include: { exam: { select: { endTime: true } } },
+    });
+    if (!attempt || attempt.userId !== session.user.id)
+      throw new Error("Unauthorized");
+    if (attempt.status !== "in_progress")
+      throw new Error("Exam already submitted");
 
-  if (attempt.exam.endTime && isAfter(new Date(), attempt.exam.endTime))
-    throw new Error("The exam time has expired");
+    if (attempt.exam.endTime && isAfter(new Date(), attempt.exam.endTime))
+      throw new Error("The exam time has expired");
 
-  const question = await prisma.question.findUnique({
-    where: { id: questionId },
-  });
-  if (!question || question.examId !== attempt.examId)
-    throw new Error("Question not found");
+    const question = await prisma.question.findUnique({
+      where: { id: questionId },
+    });
+    if (!question || question.examId !== attempt.examId)
+      throw new Error("Question not found");
 
-  await prisma.answer.upsert({
-    where: { attemptId_questionId: { attemptId, questionId } },
-    create: { attemptId, questionId, text },
-    update: { text },
-  });
+    await prisma.answer.upsert({
+      where: { attemptId_questionId: { attemptId, questionId } },
+      create: { attemptId, questionId, text },
+      update: { text },
+    });
+  } catch (e) {
+    if (e instanceof Error) throw e;
+    throw new Error("Failed to save answer");
+  }
 };
 
 const autoGrade = (
@@ -244,53 +265,67 @@ const submitAttempt = async (attemptId: string, examId: string) => {
 export const submitExam = async (attemptId: string) => {
   const session = await getStudentSession();
 
-  const attempt = await prisma.examAttempt.findUnique({
-    where: { id: attemptId },
-    include: { exam: true },
-  });
+  try {
+    const attempt = await prisma.examAttempt.findUnique({
+      where: { id: attemptId },
+      include: { exam: true },
+    });
 
-  if (!attempt || attempt.userId !== session.user.id)
-    throw new Error("Unauthorized");
-  if (attempt.status !== "in_progress")
-    throw new Error("Exam already submitted");
+    if (!attempt || attempt.userId !== session.user.id)
+      throw new Error("Unauthorized");
+    if (attempt.status !== "in_progress")
+      throw new Error("Exam already submitted");
 
-  await submitAttempt(attemptId, attempt.examId);
+    await submitAttempt(attemptId, attempt.examId);
 
-  revalidatePath("/student/exams");
-  revalidatePath(`/student/exams/${attempt.examId}`);
+    revalidatePath("/student/exams");
+    revalidatePath(`/student/exams/${attempt.examId}`);
+  } catch (e) {
+    if (e instanceof Error) throw e;
+    throw new Error("Failed to submit exam");
+  }
 };
 
 export const getStudentResults = async () => {
   const session = await getStudentSession();
 
-  const attempts = await prisma.examAttempt.findMany({
-    where: { userId: session.user.id, status: { not: "in_progress" } },
-    include: {
-      exam: {
-        select: { title: true, createdBy: { select: { name: true } } },
+  try {
+    const attempts = await prisma.examAttempt.findMany({
+      where: { userId: session.user.id, status: { not: "in_progress" } },
+      include: {
+        exam: {
+          select: { title: true, createdBy: { select: { name: true } } },
+        },
+        _count: { select: { answers: true } },
       },
-      _count: { select: { answers: true } },
-    },
-    orderBy: { submittedAt: "desc" },
-  });
+      orderBy: { submittedAt: "desc" },
+    });
 
-  return attempts;
+    return attempts;
+  } catch {
+    throw new Error("Failed to fetch results");
+  }
 };
 
 export const getResultDetail = async (attemptId: string) => {
   const session = await getStudentSession();
 
-  const attempt = await prisma.examAttempt.findUnique({
-    where: { id: attemptId },
-    include: {
-      exam: {
-        include: {
-          questions: { orderBy: { order: "asc" } },
+  let attempt;
+  try {
+    attempt = await prisma.examAttempt.findUnique({
+      where: { id: attemptId },
+      include: {
+        exam: {
+          include: {
+            questions: { orderBy: { order: "asc" } },
+          },
         },
+        answers: true,
       },
-      answers: true,
-    },
-  });
+    });
+  } catch {
+    throw new Error("Failed to fetch result details");
+  }
 
   if (!attempt || attempt.userId !== session.user.id)
     redirect("/student/results");

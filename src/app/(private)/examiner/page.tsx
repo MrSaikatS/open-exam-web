@@ -1,16 +1,19 @@
-import type { Metadata } from "next";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
-import prisma from "@/lib/database/dbClient";
+import { StatCard } from "@/components/Dashboard/StatCard";
+import {
+  ExaminerDashboardSkeleton,
+  ExaminerShellSkeleton,
+} from "@/components/Examiner/ExaminerShellSkeleton";
+import { Badge } from "@/components/shadcnui/badge";
+import { Button } from "@/components/shadcnui/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@/components/shadcnui/card";
-import { Button } from "@/components/shadcnui/button";
-import { Badge } from "@/components/shadcnui/badge";
-import { StatCard } from "@/components/Dashboard/StatCard";
+import { auth } from "@/lib/auth";
+import prisma from "@/lib/database/dbClient";
+import { format } from "date-fns";
 import {
   BookOpenIcon,
   FileTextIcon,
@@ -18,18 +21,49 @@ import {
   PlusIcon,
   UsersIcon,
 } from "lucide-react";
+import type { Metadata, Route } from "next";
+import { cacheLife, cacheTag } from "next/cache";
+import { headers } from "next/headers";
 import Link from "next/link";
-import type { Route } from "next";
-import { format } from "date-fns";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "Dashboard",
   description: "Examiner dashboard",
 };
 
-const ExaminerDashboard = async () => {
+const ExaminerDashboard = () => (
+  <section className="grid gap-8">
+    <Suspense fallback={<ExaminerShellSkeleton />}>
+      <ExaminerDashboardContent />
+    </Suspense>
+  </section>
+);
+
+const ExaminerDashboardContent = async () => {
   const session = await auth.api.getSession({ headers: await headers() });
   const userId = session!.user.id;
+
+  return (
+    <>
+      <div>
+        <h1 className="text-2xl font-medium">Examiner Dashboard</h1>
+        <p className="text-muted-foreground">
+          Welcome back, {session?.user.name}
+        </p>
+      </div>
+
+      <Suspense fallback={<ExaminerDashboardSkeleton />}>
+        <ExaminerDashboardStats userId={userId} />
+      </Suspense>
+    </>
+  );
+};
+
+const ExaminerDashboardStats = async ({ userId }: { userId: string }) => {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag("examiner-dashboard");
 
   const [examCounts, questionCount, totalStudents, attemptCounts, recentExams] =
     await Promise.all([
@@ -72,14 +106,7 @@ const ExaminerDashboard = async () => {
   const studentCount = totalStudents.length;
 
   return (
-    <section className="grid gap-8">
-      <div>
-        <h1 className="text-2xl font-medium">Examiner Dashboard</h1>
-        <p className="text-muted-foreground">
-          Welcome back, {session?.user.name}
-        </p>
-      </div>
-
+    <>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           icon={<FileTextIcon className="text-primary size-6" />}
@@ -183,7 +210,7 @@ const ExaminerDashboard = async () => {
           }
         </CardContent>
       </Card>
-    </section>
+    </>
   );
 };
 

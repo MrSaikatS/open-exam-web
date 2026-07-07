@@ -1,16 +1,19 @@
-import type { Metadata } from "next";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
-import prisma from "@/lib/database/dbClient";
+import {
+  DashboardShellSkeleton,
+  DashboardSkeleton,
+} from "@/components/Dashboard/DashboardShellSkeleton";
+import { StatCard } from "@/components/Dashboard/StatCard";
+import { Badge } from "@/components/shadcnui/badge";
+import { Button } from "@/components/shadcnui/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@/components/shadcnui/card";
-import { Button } from "@/components/shadcnui/button";
-import { Badge } from "@/components/shadcnui/badge";
-import { StatCard } from "@/components/Dashboard/StatCard";
+import { auth } from "@/lib/auth";
+import prisma from "@/lib/database/dbClient";
+import { format } from "date-fns";
 import {
   BookOpenIcon,
   FileTextIcon,
@@ -19,17 +22,102 @@ import {
   PlusIcon,
   UsersIcon,
 } from "lucide-react";
+import type { Metadata, Route } from "next";
+import { cacheLife, cacheTag } from "next/cache";
+import { headers } from "next/headers";
 import Link from "next/link";
-import type { Route } from "next";
-import { format } from "date-fns";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "Dashboard",
   description: "Admin dashboard",
 };
 
-const AdminDashboard = async () => {
+const AdminDashboard = () => (
+  <section className="grid gap-8">
+    <Suspense fallback={<DashboardShellSkeleton />}>
+      <AdminDashboardContent />
+    </Suspense>
+  </section>
+);
+
+const AdminDashboardContent = async () => {
   const session = await auth.api.getSession({ headers: await headers() });
+
+  return (
+    <>
+      <div>
+        <h1 className="text-2xl font-medium">Admin Dashboard</h1>
+        <p className="text-muted-foreground">
+          Welcome back, {session?.user.name}
+        </p>
+      </div>
+
+      <Suspense fallback={<DashboardSkeleton />}>
+        <AdminDashboardStats />
+      </Suspense>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Quick Actions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Link
+              href="/admin/users"
+              as={"/admin/users" as Route}>
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full justify-start">
+                <UsersIcon className="size-4" />
+                Manage Users
+              </Button>
+            </Link>
+            <Link
+              href="/admin/exams/new"
+              as={"/admin/exams/new" as Route}>
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full justify-start">
+                <PlusIcon className="size-4" />
+                Create Exam
+              </Button>
+            </Link>
+            <Link
+              href="/admin/questions"
+              as={"/admin/questions" as Route}>
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full justify-start">
+                <BookOpenIcon className="size-4" />
+                Question Bank
+              </Button>
+            </Link>
+            <Link
+              href="/admin/results"
+              as={"/admin/results" as Route}>
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full justify-start">
+                <LayoutDashboardIcon className="size-4" />
+                View Results
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    </>
+  );
+};
+
+const AdminDashboardStats = async () => {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag("admin-dashboard");
 
   const [
     userCounts,
@@ -84,14 +172,7 @@ const AdminDashboard = async () => {
     attemptCounts.find((g) => g.status === "submitted")?._count ?? 0;
 
   return (
-    <section className="grid gap-8">
-      <div>
-        <h1 className="text-2xl font-medium">Admin Dashboard</h1>
-        <p className="text-muted-foreground">
-          Welcome back, {session?.user.name}
-        </p>
-      </div>
-
+    <>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           icon={<UsersIcon className="text-primary size-6" />}
@@ -249,53 +330,7 @@ const AdminDashboard = async () => {
           </CardContent>
         </Card>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Link href="/admin/users">
-              <Button
-                variant="outline"
-                size="lg"
-                className="w-full justify-start">
-                <UsersIcon className="size-4" />
-                Manage Users
-              </Button>
-            </Link>
-            <Link href="/admin/exams/new">
-              <Button
-                variant="outline"
-                size="lg"
-                className="w-full justify-start">
-                <PlusIcon className="size-4" />
-                Create Exam
-              </Button>
-            </Link>
-            <Link href="/admin/questions">
-              <Button
-                variant="outline"
-                size="lg"
-                className="w-full justify-start">
-                <BookOpenIcon className="size-4" />
-                Question Bank
-              </Button>
-            </Link>
-            <Link href="/admin/results">
-              <Button
-                variant="outline"
-                size="lg"
-                className="w-full justify-start">
-                <LayoutDashboardIcon className="size-4" />
-                View Results
-              </Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-    </section>
+    </>
   );
 };
 

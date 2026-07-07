@@ -12,17 +12,17 @@ import {
   setUserRole,
   unbanUser,
 } from "@/server/actions/user";
-import { Button } from "../shadcnui/button";
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "../shadcnui/dialog";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../shadcnui/alert-dialog";
+import { Button } from "../shadcnui/button";
 import {
   Select,
   SelectContent,
@@ -56,8 +56,8 @@ const UsersTable = ({ initialUsers, initialTotal }: UsersTableProps) => {
   const [search, setSearch] = useState("");
   const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
-  const [banTarget, setBanTarget] = useState<UserRow | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [pendingBanUser, setPendingBanUser] = useState<UserRow | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
   const limit = 20;
 
@@ -95,11 +95,15 @@ const UsersTable = ({ initialUsers, initialTotal }: UsersTableProps) => {
 
   const handleDelete = async (userId: string) => {
     setLoadingId(userId);
-    setDeleteTarget(null);
-    await deleteUser(userId);
-    toast.success("User deleted");
-    refresh();
-    fetchUsers(search, offset);
+    setPendingDeleteId(null);
+    try {
+      await deleteUser(userId);
+      toast.success("User deleted");
+      refresh();
+      fetchUsers(search, offset);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to delete user");
+    }
     setLoadingId(null);
   };
 
@@ -108,30 +112,36 @@ const UsersTable = ({ initialUsers, initialTotal }: UsersTableProps) => {
     role: "admin" | "examiner" | "proctor" | "student",
   ) => {
     setLoadingId(userId);
-    await setUserRole(userId, role);
-    toast.success("Role updated");
-    refresh();
-    fetchUsers(search, offset);
-    setLoadingId(null);
-  };
-
-  const handleBanToggle = async (user: UserRow) => {
-    setLoadingId(user.id);
-    setBanTarget(null);
-    if (user.banned) {
-      await unbanUser(user.id);
-      toast.success("User unbanned");
-    } else {
-      await banUser(user.id);
-      toast.success("User banned");
+    try {
+      await setUserRole(userId, role);
+      toast.success("Role updated");
+      refresh();
+      fetchUsers(search, offset);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update role");
     }
-    refresh();
-    fetchUsers(search, offset);
     setLoadingId(null);
   };
 
-  const confirmBan = (user: UserRow) => {
-    setBanTarget(user);
+  const handleBanConfirm = async () => {
+    if (!pendingBanUser) return;
+    const user = pendingBanUser;
+    setPendingBanUser(null);
+    setLoadingId(user.id);
+    try {
+      if (user.banned) {
+        await unbanUser(user.id);
+        toast.success("User unbanned");
+      } else {
+        await banUser(user.id);
+        toast.success("User banned");
+      }
+      refresh();
+      fetchUsers(search, offset);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update user");
+    }
+    setLoadingId(null);
   };
 
   const totalPages = Math.ceil(total / limit);
@@ -240,9 +250,7 @@ const UsersTable = ({ initialUsers, initialTotal }: UsersTableProps) => {
                       <Button
                         variant="outline"
                         size="xs"
-                        onClick={() =>
-                          user.banned ? handleBanToggle(user) : confirmBan(user)
-                        }
+                        onClick={() => setPendingBanUser(user)}
                         disabled={loadingId === user.id}>
                         {loadingId === user.id ?
                           <Loader2Icon className="size-3 animate-spin" />
@@ -250,87 +258,15 @@ const UsersTable = ({ initialUsers, initialTotal }: UsersTableProps) => {
                           "Unban"
                         : "Ban"}
                       </Button>
-                      <Dialog
-                        open={deleteTarget === user.id}
-                        onOpenChange={(open) =>
-                          setDeleteTarget(open ? user.id : null)
-                        }>
-                        <DialogTrigger
-                          render={
-                            <Button
-                              variant="outline"
-                              size="icon-sm"
-                              disabled={loadingId === user.id}>
-                              {loadingId === user.id ?
-                                <Loader2Icon className="size-4 animate-spin" />
-                              : <Trash2Icon className="text-destructive size-4" />
-                              }
-                            </Button>
-                          }
-                        />
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Delete User</DialogTitle>
-                            <DialogDescription>
-                              Permanently delete {user.name}? This action cannot
-                              be undone.
-                            </DialogDescription>
-                          </DialogHeader>
-                          <DialogFooter showCloseButton>
-                            <DialogClose
-                              render={
-                                <Button
-                                  variant="destructive"
-                                  size="lg"
-                                  onClick={() => handleDelete(user.id)}
-                                  disabled={loadingId === user.id}>
-                                  {loadingId === user.id ?
-                                    <>
-                                      <Loader2Icon className="size-4 animate-spin" />{" "}
-                                      Deleting...
-                                    </>
-                                  : <>
-                                      <Trash2Icon className="size-4" /> Delete
-                                    </>
-                                  }
-                                </Button>
-                              }
-                            />
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                      <Dialog
-                        open={banTarget?.id === user.id}
-                        onOpenChange={(open) =>
-                          setBanTarget(open ? user : null)
-                        }>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Ban User</DialogTitle>
-                            <DialogDescription>
-                              Ban {user.name}? They will be unable to sign in.
-                            </DialogDescription>
-                          </DialogHeader>
-                          <DialogFooter showCloseButton>
-                            <DialogClose
-                              render={
-                                <Button
-                                  variant="destructive"
-                                  size="lg"
-                                  onClick={() => handleBanToggle(user)}
-                                  disabled={loadingId === user.id}>
-                                  {loadingId === user.id ?
-                                    <>
-                                      <Loader2Icon className="size-4 animate-spin" />{" "}
-                                      Banning...
-                                    </>
-                                  : "Ban"}
-                                </Button>
-                              }
-                            />
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
+                      <Button
+                        variant="outline"
+                        size="icon-sm"
+                        onClick={() => setPendingDeleteId(user.id)}
+                        disabled={loadingId === user.id}>
+                        {loadingId === user.id ?
+                          <Loader2Icon className="size-4 animate-spin" />
+                        : <Trash2Icon className="text-destructive size-4" />}
+                      </Button>
                     </div>
                   </td>
                 </tr>
@@ -363,6 +299,53 @@ const UsersTable = ({ initialUsers, initialTotal }: UsersTableProps) => {
           </div>
         </div>
       )}
+      <AlertDialog
+        open={!!pendingDeleteId}
+        onOpenChange={(open) => !open && setPendingDeleteId(null)}>
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete user</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to permanently delete this user? This action
+              cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => pendingDeleteId && handleDelete(pendingDeleteId)}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!pendingBanUser}
+        onOpenChange={(open) => !open && setPendingBanUser(null)}>
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingBanUser?.banned ? "Unban user" : "Ban user"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingBanUser?.banned ?
+                `Are you sure you want to unban ${pendingBanUser.name}? They will be able to sign in again.`
+              : `Are you sure you want to ban ${pendingBanUser?.name}? They will be unable to sign in.`
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={handleBanConfirm}>
+              {pendingBanUser?.banned ? "Unban" : "Ban"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -11,6 +11,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcnui/card";
+import { ExamStatusBadge } from "@/components/Student/ExamStatusBadge";
+import { AttemptBadge } from "@/components/Student/AttemptBadge";
 import { ClockIcon, EyeIcon, PlayIcon, RotateCcwIcon } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -31,48 +33,6 @@ const getTimeStatus = (exam: {
     return "not_yet_available";
   if (exam.endTime && isAfter(now, exam.endTime)) return "ended";
   return "available";
-};
-
-const statusBadge = (status: string) => {
-  const map: Record<string, { label: string; className: string }> = {
-    draft: { label: "Draft", className: "bg-muted text-muted-foreground" },
-    published: {
-      label: "Available",
-      className:
-        "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-    },
-  };
-  const s = map[status] ?? {
-    label: status,
-    className: "bg-muted text-muted-foreground",
-  };
-  return <Badge className={s.className}>{s.label}</Badge>;
-};
-
-const attemptBadge = (status: string | undefined) => {
-  const map: Record<string, { label: string; className: string }> = {
-    in_progress: {
-      label: "In Progress",
-      className:
-        "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-    },
-    submitted: {
-      label: "Submitted",
-      className:
-        "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-    },
-    graded: {
-      label: "Graded",
-      className:
-        "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-    },
-  };
-  if (!status) return null;
-  const s = map[status] ?? {
-    label: status,
-    className: "bg-muted text-muted-foreground",
-  };
-  return <Badge className={s.className}>{s.label}</Badge>;
 };
 
 const StudentExamsPage = async () => {
@@ -120,8 +80,8 @@ const StudentExamsPage = async () => {
                       <CardDescription>{exam.description}</CardDescription>
                     </div>
                     <div className="flex items-center gap-2">
-                      {statusBadge(exam.status)}
-                      {attemptBadge(attempt?.status)}
+                      <ExamStatusBadge status={exam.status} />
+                      <AttemptBadge status={attempt?.status} />
                       {timeBadge()}
                     </div>
                   </div>

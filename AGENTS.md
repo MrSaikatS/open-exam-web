@@ -135,6 +135,7 @@ All in `src/server/actions/`, each is `"use server"`, checks session + role owne
 
 - Tailwind v4: all theme config in `globals.css` via `@theme` block. No `tailwind.config.ts`.
 - Prettier: `singleAttributePerLine: true`, `bracketSameLine: true`, `experimentalTernaries: true`, `prettier-plugin-tailwindcss`. Match existing style.
+- Use arrow functions for all components and functions — no `function` or `async function` declarations (except in `src/components/shadcnui/`).
 - shadcn `Input` from `@base-ui/react/input` has strict value types — `Controller` fields with `z.coerce.number()` need explicit `value={String(field.value ?? "")}`.
 - Prefer `variant="outline"` over `variant="ghost"`; prefer `size="lg"` over `size="sm"`, `size="icon-lg"` over `size="icon-sm"`.
 
@@ -167,6 +168,19 @@ Form: `<form onSubmit={handleSubmit(handler)} noValidate>`. Submit button shows 
 
 - Use `.bind(null, ...args)` — e.g. `action={updateExam.bind(null, id)}`.
 - Inline anonymous functions like `action={async (fd) => updateExam(id, fd)}` cannot be serialized across the server/client boundary.
+
+# Shared components (extracted from pages)
+
+Repeated inline components in page files should be extracted to `src/components/` for reuse.
+
+| Component                                            | File                                                  | Used by                                                                                                                                                                                    |
+| ---------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `DashboardShellSkeleton`, `DashboardSkeleton`        | `src/components/Dashboard/DashboardShellSkeleton.tsx` | `admin/page.tsx`                                                                                                                                                                           |
+| `ExaminerShellSkeleton`, `ExaminerDashboardSkeleton` | `src/components/Examiner/ExaminerShellSkeleton.tsx`   | `examiner/page.tsx`                                                                                                                                                                        |
+| `StatusBadge`                                        | `src/components/Results/StatusBadge.tsx`              | `admin/results/page.tsx`, `admin/exams/[id]/results/page.tsx`, `examiner/results/page.tsx`, `examiner/exams/[id]/results/page.tsx`, `proctor/results/page.tsx`, `student/results/page.tsx` |
+| `PctBadge`                                           | `src/components/Results/PctBadge.tsx`                 | `admin/results/page.tsx`, `admin/exams/[id]/results/page.tsx`, `examiner/results/page.tsx`, `examiner/exams/[id]/results/page.tsx`, `proctor/results/page.tsx`                             |
+| `ExamStatusBadge`                                    | `src/components/Student/ExamStatusBadge.tsx`          | `student/exams/page.tsx`                                                                                                                                                                   |
+| `AttemptBadge`                                       | `src/components/Student/AttemptBadge.tsx`             | `student/exams/page.tsx`                                                                                                                                                                   |
 
 # Path aliases
 
