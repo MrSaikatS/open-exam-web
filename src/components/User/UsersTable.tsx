@@ -57,6 +57,7 @@ const UsersTable = ({ initialUsers, initialTotal }: UsersTableProps) => {
   const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [pendingBanUser, setPendingBanUser] = useState<UserRow | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
   const limit = 20;
 
@@ -122,17 +123,16 @@ const UsersTable = ({ initialUsers, initialTotal }: UsersTableProps) => {
     setLoadingId(null);
   };
 
-  const handleBanToggle = async (user: UserRow) => {
+  const handleBanConfirm = async () => {
+    if (!pendingBanUser) return;
+    const user = pendingBanUser;
+    setPendingBanUser(null);
     setLoadingId(user.id);
     try {
       if (user.banned) {
         await unbanUser(user.id);
         toast.success("User unbanned");
       } else {
-        if (!confirm(`Ban ${user.name}? They will be unable to sign in.`)) {
-          setLoadingId(null);
-          return;
-        }
         await banUser(user.id);
         toast.success("User banned");
       }
@@ -250,7 +250,7 @@ const UsersTable = ({ initialUsers, initialTotal }: UsersTableProps) => {
                       <Button
                         variant="outline"
                         size="xs"
-                        onClick={() => handleBanToggle(user)}
+                        onClick={() => setPendingBanUser(user)}
                         disabled={loadingId === user.id}>
                         {loadingId === user.id ?
                           <Loader2Icon className="size-3 animate-spin" />
@@ -316,6 +316,32 @@ const UsersTable = ({ initialUsers, initialTotal }: UsersTableProps) => {
               variant="destructive"
               onClick={() => pendingDeleteId && handleDelete(pendingDeleteId)}>
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!pendingBanUser}
+        onOpenChange={(open) => !open && setPendingBanUser(null)}>
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingBanUser?.banned ? "Unban user" : "Ban user"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingBanUser?.banned ?
+                `Are you sure you want to unban ${pendingBanUser.name}? They will be able to sign in again.`
+              : `Are you sure you want to ban ${pendingBanUser?.name}? They will be unable to sign in.`
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={handleBanConfirm}>
+              {pendingBanUser?.banned ? "Unban" : "Ban"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

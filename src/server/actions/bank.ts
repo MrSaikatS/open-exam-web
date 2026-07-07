@@ -19,7 +19,7 @@ export const getBankQuestions = async () => {
   void session;
 
   try {
-    return prisma.bankQuestion.findMany({
+    return await prisma.bankQuestion.findMany({
       orderBy: { createdAt: "desc" },
       include: {
         createdBy: { select: { name: true } },
@@ -34,19 +34,20 @@ export const getBankQuestionById = async (id: string) => {
   const session = await requireExaminer();
   void session;
 
+  let question: Awaited<ReturnType<typeof prisma.bankQuestion.findUnique>>;
   try {
-    const question = await prisma.bankQuestion.findUnique({
+    question = await prisma.bankQuestion.findUnique({
       where: { id },
       include: {
         createdBy: { select: { name: true } },
       },
     });
-
-    if (!question) redirect("/admin/questions");
-    return question;
   } catch {
     throw new Error("Failed to fetch bank question");
   }
+
+  if (!question) redirect("/admin/questions");
+  return question;
 };
 
 export const createBankQuestion = async (formData: FormData) => {

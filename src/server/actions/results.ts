@@ -84,6 +84,13 @@ export const getAllResults = async () => {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/");
 
+  if (
+    session.user.role !== "admin" &&
+    session.user.role !== "examiner" &&
+    session.user.role !== "proctor"
+  )
+    redirect("/");
+
   try {
     const where: Record<string, unknown> = {
       status: { not: "in_progress" },
@@ -98,8 +105,6 @@ export const getAllResults = async () => {
     } else if (session.user.role === "proctor") {
       const examIds = await getProctorExamIds(session.user.id);
       where.examId = { in: examIds };
-    } else if (session.user.role !== "admin") {
-      redirect("/");
     }
 
     const attempts = await prisma.examAttempt.findMany({

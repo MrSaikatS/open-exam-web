@@ -77,25 +77,34 @@ export const createExam = async (formData: FormData) => {
   const startTime = formData.get("startTime") as string;
   const endTime = formData.get("endTime") as string;
 
-  const exam = await prisma.exam.create({
-    data: {
-      title,
-      description: description || null,
-      duration,
-      startTime: startTime ? new Date(startTime) : null,
-      endTime: endTime ? new Date(endTime) : null,
-      createdById: session.user.id,
-    },
-  });
+  let exam: Awaited<ReturnType<typeof prisma.exam.create>>;
+  try {
+    exam = await prisma.exam.create({
+      data: {
+        title,
+        description: description || null,
+        duration,
+        startTime: startTime ? new Date(startTime) : null,
+        endTime: endTime ? new Date(endTime) : null,
+        createdById: session.user.id,
+      },
+    });
 
-  const basePath = session.user.role === "admin" ? "/admin" : "/examiner";
-  revalidatePath(`${basePath}/exams`);
-  if (session.user.role === "admin") {
-    revalidateTag("admin-dashboard", "max");
-  } else {
-    revalidateTag("examiner-dashboard", "max");
+    const basePath = session.user.role === "admin" ? "/admin" : "/examiner";
+    revalidatePath(`${basePath}/exams`);
+    if (session.user.role === "admin") {
+      revalidateTag("admin-dashboard", "max");
+    } else {
+      revalidateTag("examiner-dashboard", "max");
+    }
+  } catch (e) {
+    if (e instanceof Error) throw e;
+    throw new Error("Failed to create exam");
   }
-  redirect(`${basePath}/exams/${exam.id}`);
+  return {
+    id: exam.id,
+    basePath: session.user.role === "admin" ? "/admin" : "/examiner",
+  };
 };
 
 export const updateExam = async (id: string, formData: FormData) => {
