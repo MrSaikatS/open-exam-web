@@ -11,7 +11,7 @@ import {
   getUsers,
   setUserRole,
   unbanUser,
-} from "@/server/actions/user";
+} from "@/server/userActions";
 import {
   AlertDialog,
   AlertDialogAction,

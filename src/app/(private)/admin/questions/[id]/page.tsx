@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowLeftIcon } from "lucide-react";
 import BankQuestionForm from "@/components/Exam/BankQuestionForm";
 import { Button } from "@/components/shadcnui/button";
-import { getBankQuestionById, updateBankQuestion } from "@/server/actions/bank";
+import { getBankQuestionById, updateBankQuestion } from "@/server/bankActions";
 
 export const metadata: Metadata = {
   title: "Edit Question",

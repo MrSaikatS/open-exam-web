@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import ExamForm from "@/components/Exam/ExamForm";
-import { createExam } from "@/server/actions/exam";
+import { createExam } from "@/server/examActions";
 
 export const metadata: Metadata = {
   title: "Create Exam",

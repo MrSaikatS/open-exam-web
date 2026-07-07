@@ -9,8 +9,8 @@ import {
 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "react-toastify";
-import { deleteQuestion, updateQuestion } from "@/server/actions/exam";
-import { getBankQuestions, importBankQuestions } from "@/server/actions/bank";
+import { deleteQuestion, updateQuestion } from "@/server/examActions";
+import { getBankQuestions, importBankQuestions } from "@/server/bankActions";
 import { questionFormSchema, QuestionFormType } from "@/lib/zodSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";

@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { BookOpenIcon, PlusIcon } from "lucide-react";
 import { Button } from "@/components/shadcnui/button";
-import { getBankQuestions } from "@/server/actions/bank";
+import { getBankQuestions } from "@/server/bankActions";
 import DeleteBankQuestionButton from "@/components/Exam/DeleteBankQuestionButton";
 
 export const metadata: Metadata = {

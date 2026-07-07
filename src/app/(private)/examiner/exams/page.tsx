@@ -3,7 +3,7 @@ import Link from "next/link";
 import { PlusIcon } from "lucide-react";
 import { Button } from "@/components/shadcnui/button";
 import ExamsTable from "@/components/Exam/ExamsTable";
-import { getExams } from "@/server/actions/exam";
+import { getExams } from "@/server/examActions";
 
 export const metadata: Metadata = {
   title: "My Exams",

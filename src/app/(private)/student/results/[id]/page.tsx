@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getResultDetail } from "@/server/actions/studentExam";
+import { getResultDetail } from "@/server/studentExamActions";
 import { ResultReview } from "@/components/Student/ResultReview";
 
 export const metadata: Metadata = {

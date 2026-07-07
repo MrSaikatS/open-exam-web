@@ -5,7 +5,7 @@ import { ArrowLeftIcon, BarChart3Icon, EyeIcon, UsersIcon } from "lucide-react";
 import ExamForm from "@/components/Exam/ExamForm";
 import QuestionsManager from "@/components/Exam/QuestionsManager";
 import { Button } from "@/components/shadcnui/button";
-import { getExamById, updateExam } from "@/server/actions/exam";
+import { getExamById, updateExam } from "@/server/examActions";
 
 export const metadata: Metadata = {
   title: "Exam Details",

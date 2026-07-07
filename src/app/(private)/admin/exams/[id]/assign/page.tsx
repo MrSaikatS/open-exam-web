@@ -3,11 +3,11 @@ import Link from "next/link";
 import { ArrowLeftIcon } from "lucide-react";
 import { AssignStudents } from "@/components/Exam/AssignStudents";
 import { Button } from "@/components/shadcnui/button";
-import { getExamById } from "@/server/actions/exam";
+import { getExamById } from "@/server/examActions";
 import {
   getAssignedStudents,
   getAvailableStudents,
-} from "@/server/actions/assignment";
+} from "@/server/assignmentActions";
 
 export const metadata: Metadata = {
   title: "Assign Exam",

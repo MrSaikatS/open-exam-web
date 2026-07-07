@@ -3,7 +3,7 @@
 import { Loader2Icon, PlusIcon, Trash2Icon, XIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "react-toastify";
-import { assignExam, unassignExam } from "@/server/actions/assignment";
+import { assignExam, unassignExam } from "@/server/assignmentActions";
 import { Button } from "../shadcnui/button";
 
 type Student = {

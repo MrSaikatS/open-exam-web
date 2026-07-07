@@ -3,7 +3,7 @@ import Link from "next/link";
 import { EyeIcon, FileTextIcon } from "lucide-react";
 import { Button } from "@/components/shadcnui/button";
 import { Card } from "@/components/shadcnui/card";
-import { getProctorExams } from "@/server/actions/proctor";
+import { getProctorExams } from "@/server/proctorActions";
 
 export const metadata: Metadata = {
   title: "Assigned Exams",

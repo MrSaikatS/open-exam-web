@@ -5,7 +5,7 @@ import { ClockIcon, UsersIcon } from "lucide-react";
 import { toast } from "react-toastify";
 import { Badge } from "@/components/shadcnui/badge";
 import { Card } from "@/components/shadcnui/card";
-import { getExamProgress } from "@/server/actions/proctor";
+import { getExamProgress } from "@/server/proctorActions";
 import { format } from "date-fns";
 
 type ExamProgress = Awaited<ReturnType<typeof getExamProgress>>;

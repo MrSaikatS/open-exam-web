@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { format } from "date-fns";
-import { getStudentResults } from "@/server/actions/studentExam";
+import { getStudentResults } from "@/server/studentExamActions";
 import {
   Card,
   CardContent,
