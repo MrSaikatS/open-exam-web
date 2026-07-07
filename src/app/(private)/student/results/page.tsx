@@ -43,7 +43,7 @@ const StudentResultsPage = async () => {
                     <span className="text-lg font-bold tabular-nums">
                       {r.totalScore ?? r.autoScore ?? "?"}/{r.maxScore}
                     </span>
-                    {<StatusBadge status={r.status} />}
+                    <StatusBadge status={r.status} />
                   </div>
                 </div>
               </CardHeader>

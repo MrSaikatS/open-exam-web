@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { Button } from "@/components/shadcnui/button";
 import { AlertTriangleIcon } from "lucide-react";
 import Link from "next/link";
@@ -11,6 +12,10 @@ const PrivateErrorPage = ({
   error: Error & { digest?: string };
   reset: () => void;
 }) => {
+  useEffect(() => {
+    console.error(error);
+  }, [error]);
+
   return (
     <section className="flex flex-1 flex-col items-center justify-center gap-6 p-8 text-center">
       <AlertTriangleIcon className="text-destructive size-12" />

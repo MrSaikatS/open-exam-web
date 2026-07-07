@@ -7,9 +7,9 @@ import { SidebarLayout } from "@/components/Sidebar/SidebarLayout";
 import { examinerNav } from "@/components/Sidebar/nav-config";
 
 const ExaminerLayout = ({ children }: LayoutProps) => (
-  <Suspense fallback={null}>
-    <ExaminerGate>{children}</ExaminerGate>
-  </Suspense>
+  <ExaminerGate>
+    <Suspense fallback={null}>{children}</Suspense>
+  </ExaminerGate>
 );
 
 const ExaminerGate = async ({ children }: LayoutProps) => {

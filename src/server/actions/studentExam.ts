@@ -116,32 +116,33 @@ export const startExam = async (examId: string) => {
 export const getAttemptQuestions = async (attemptId: string) => {
   const session = await getStudentSession();
 
+  let attempt;
   try {
-    const attempt = await prisma.examAttempt.findUnique({
+    attempt = await prisma.examAttempt.findUnique({
       where: { id: attemptId },
       include: {
         exam: { select: { title: true, duration: true, createdById: true } },
       },
     });
-
-    if (!attempt || attempt.userId !== session.user.id)
-      redirect("/student/exams");
-    if (attempt.status !== "in_progress")
-      return { attempt, questions: [] as never[], answers: [] as never[] };
-
-    const questions = await prisma.question.findMany({
-      where: { examId: attempt.examId },
-      orderBy: { order: "asc" },
-    });
-
-    const answers = await prisma.answer.findMany({
-      where: { attemptId },
-    });
-
-    return { attempt, questions, answers };
   } catch {
     throw new Error("Failed to load exam questions");
   }
+
+  if (!attempt || attempt.userId !== session.user.id)
+    redirect("/student/exams");
+  if (attempt.status !== "in_progress")
+    return { attempt, questions: [] as never[], answers: [] as never[] };
+
+  const questions = await prisma.question.findMany({
+    where: { examId: attempt.examId },
+    orderBy: { order: "asc" },
+  });
+
+  const answers = await prisma.answer.findMany({
+    where: { attemptId },
+  });
+
+  return { attempt, questions, answers };
 };
 
 export const saveAnswer = async (
@@ -307,8 +308,9 @@ export const getStudentResults = async () => {
 export const getResultDetail = async (attemptId: string) => {
   const session = await getStudentSession();
 
+  let attempt;
   try {
-    const attempt = await prisma.examAttempt.findUnique({
+    attempt = await prisma.examAttempt.findUnique({
       where: { id: attemptId },
       include: {
         exam: {
@@ -319,12 +321,12 @@ export const getResultDetail = async (attemptId: string) => {
         answers: true,
       },
     });
-
-    if (!attempt || attempt.userId !== session.user.id)
-      redirect("/student/results");
-
-    return attempt;
   } catch {
     throw new Error("Failed to fetch result details");
   }
+
+  if (!attempt || attempt.userId !== session.user.id)
+    redirect("/student/results");
+
+  return attempt;
 };

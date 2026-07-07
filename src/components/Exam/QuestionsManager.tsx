@@ -436,7 +436,10 @@ const QuestionsManager = ({ examId, questions }: QuestionsManagerProps) => {
                 <Button
                   variant="outline"
                   size="icon-xs"
-                  onClick={() => handleDelete(q.id)}
+                  onClick={() => {
+                    if (!confirm("Delete this question?")) return;
+                    handleDelete(q.id);
+                  }}
                   disabled={loadingDelete === q.id}>
                   {loadingDelete === q.id ?
                     <Loader2Icon className="size-3 animate-spin" />

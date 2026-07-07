@@ -10,11 +10,12 @@ export const getExams = async () => {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/");
 
+  const role = session.user.role;
+  if (role !== "admin" && role !== "examiner") redirect("/");
+
   try {
-    const role = session.user.role;
-
     if (role === "admin") {
-      return prisma.exam.findMany({
+      return await prisma.exam.findMany({
         orderBy: { createdAt: "desc" },
         include: {
           _count: { select: { questions: true } },
@@ -23,18 +24,14 @@ export const getExams = async () => {
       });
     }
 
-    if (role === "examiner") {
-      return prisma.exam.findMany({
-        where: { createdById: session.user.id },
-        orderBy: { createdAt: "desc" },
-        include: {
-          _count: { select: { questions: true } },
-          createdBy: { select: { name: true } },
-        },
-      });
-    }
-
-    redirect("/");
+    return await prisma.exam.findMany({
+      where: { createdById: session.user.id },
+      orderBy: { createdAt: "desc" },
+      include: {
+        _count: { select: { questions: true } },
+        createdBy: { select: { name: true } },
+      },
+    });
   } catch {
     throw new Error("Failed to fetch exams");
   }
@@ -44,26 +41,28 @@ export const getExamById = async (id: string) => {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/");
 
+  let exam;
   try {
-    const exam = await prisma.exam.findUnique({
+    exam = await prisma.exam.findUnique({
       where: { id },
       include: {
         questions: { orderBy: { order: "asc" } },
         createdBy: { select: { name: true } },
       },
     });
-
-    if (!exam) redirect("/admin/exams");
-    if (
-      session.user.role === "examiner" &&
-      exam.createdById !== session.user.id
-    )
-      redirect("/examiner/exams");
-
-    return exam;
   } catch {
     throw new Error("Failed to fetch exam");
   }
+
+  if (!exam) {
+    if (session.user.role === "admin") redirect("/admin/exams");
+    redirect("/examiner/exams");
+  }
+
+  if (session.user.role === "examiner" && exam.createdById !== session.user.id)
+    redirect("/examiner/exams");
+
+  return exam;
 };
 
 export const createExam = async (formData: FormData) => {

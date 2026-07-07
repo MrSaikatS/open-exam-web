@@ -1,5 +1,6 @@
 "use client";
 
+import { format } from "date-fns";
 import { Loader2Icon, SearchIcon, Trash2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -236,7 +237,7 @@ const UsersTable = ({ initialUsers, initialTotal }: UsersTableProps) => {
                     }
                   </td>
                   <td className="text-muted-foreground px-4 py-3">
-                    {new Date(user.createdAt).toLocaleDateString()}
+                    {format(user.createdAt, "MMM d, yyyy")}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">

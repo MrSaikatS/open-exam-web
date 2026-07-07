@@ -80,8 +80,8 @@ const StudentExamsPage = async () => {
                       <CardDescription>{exam.description}</CardDescription>
                     </div>
                     <div className="flex items-center gap-2">
-                      {<ExamStatusBadge status={exam.status} />}
-                      {<AttemptBadge status={attempt?.status} />}
+                      <ExamStatusBadge status={exam.status} />
+                      <AttemptBadge status={attempt?.status} />
                       {timeBadge()}
                     </div>
                   </div>

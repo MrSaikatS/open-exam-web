@@ -67,7 +67,7 @@ export const getAssignedStudents = async (examId: string) => {
   if (!session) redirect("/");
 
   try {
-    return prisma.examAssignment.findMany({
+    return await prisma.examAssignment.findMany({
       where: { examId },
       include: {
         user: { select: { id: true, name: true, email: true } },
@@ -90,7 +90,7 @@ export const getAvailableStudents = async (examId: string) => {
     });
     const assignedIds = assigned.map((a) => a.userId);
 
-    return prisma.user.findMany({
+    return await prisma.user.findMany({
       where: {
         role: "student",
         id: { notIn: assignedIds },
