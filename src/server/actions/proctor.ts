@@ -67,7 +67,7 @@ export const getAssignedProctors = async (examId: string) => {
   if (!session) redirect("/");
 
   try {
-    return prisma.examProctor.findMany({
+    return await prisma.examProctor.findMany({
       where: { examId },
       include: {
         proctor: { select: { id: true, name: true, email: true } },
@@ -90,7 +90,7 @@ export const getAvailableProctors = async (examId: string) => {
     });
     const assignedIds = assigned.map((a) => a.proctorId);
 
-    return prisma.user.findMany({
+    return await prisma.user.findMany({
       where: {
         role: "proctor",
         id: { notIn: assignedIds },

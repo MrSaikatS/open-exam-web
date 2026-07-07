@@ -39,6 +39,7 @@ export const ProctorExamMonitor = ({
 
   const fetchProgress = useCallback(async () => {
     try {
+      toast.dismiss("proctor-poll-error");
       const fresh = await getExamProgress(examId);
       setData(fresh);
       setLastUpdated(new Date());
@@ -49,7 +50,9 @@ export const ProctorExamMonitor = ({
         allSubmittedRef.current = true;
       }
     } catch {
-      toast.error("Failed to fetch exam progress");
+      toast.error("Failed to fetch exam progress", {
+        toastId: "proctor-poll-error",
+      });
     }
   }, [examId]);
 

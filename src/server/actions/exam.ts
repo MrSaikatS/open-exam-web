@@ -71,35 +71,31 @@ export const createExam = async (formData: FormData) => {
   if (session.user.role !== "admin" && session.user.role !== "examiner")
     redirect("/");
 
-  try {
-    const title = formData.get("title") as string;
-    const description = formData.get("description") as string;
-    const duration = parseInt(formData.get("duration") as string);
-    const startTime = formData.get("startTime") as string;
-    const endTime = formData.get("endTime") as string;
+  const title = formData.get("title") as string;
+  const description = formData.get("description") as string;
+  const duration = parseInt(formData.get("duration") as string);
+  const startTime = formData.get("startTime") as string;
+  const endTime = formData.get("endTime") as string;
 
-    const exam = await prisma.exam.create({
-      data: {
-        title,
-        description: description || null,
-        duration,
-        startTime: startTime ? new Date(startTime) : null,
-        endTime: endTime ? new Date(endTime) : null,
-        createdById: session.user.id,
-      },
-    });
+  const exam = await prisma.exam.create({
+    data: {
+      title,
+      description: description || null,
+      duration,
+      startTime: startTime ? new Date(startTime) : null,
+      endTime: endTime ? new Date(endTime) : null,
+      createdById: session.user.id,
+    },
+  });
 
-    const basePath = session.user.role === "admin" ? "/admin" : "/examiner";
-    revalidatePath(`${basePath}/exams`);
-    if (session.user.role === "admin") {
-      revalidateTag("admin-dashboard", "max");
-    } else {
-      revalidateTag("examiner-dashboard", "max");
-    }
-    redirect(`${basePath}/exams/${exam.id}`);
-  } catch {
-    throw new Error("Failed to create exam");
+  const basePath = session.user.role === "admin" ? "/admin" : "/examiner";
+  revalidatePath(`${basePath}/exams`);
+  if (session.user.role === "admin") {
+    revalidateTag("admin-dashboard", "max");
+  } else {
+    revalidateTag("examiner-dashboard", "max");
   }
+  redirect(`${basePath}/exams/${exam.id}`);
 };
 
 export const updateExam = async (id: string, formData: FormData) => {

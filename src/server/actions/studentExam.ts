@@ -82,7 +82,9 @@ export const startExam = async (examId: string) => {
         isAfter(new Date(), existing.exam.endTime)
       ) {
         await submitAttempt(existing.id, examId);
-        return prisma.examAttempt.findUnique({ where: { id: existing.id } });
+        return await prisma.examAttempt.findUnique({
+          where: { id: existing.id },
+        });
       }
       return existing;
     }

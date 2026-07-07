@@ -12,6 +12,16 @@ import {
   setUserRole,
   unbanUser,
 } from "@/server/actions/user";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../shadcnui/alert-dialog";
 import { Button } from "../shadcnui/button";
 import {
   Select,
@@ -46,6 +56,7 @@ const UsersTable = ({ initialUsers, initialTotal }: UsersTableProps) => {
   const [search, setSearch] = useState("");
   const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
   const limit = 20;
 
@@ -82,13 +93,8 @@ const UsersTable = ({ initialUsers, initialTotal }: UsersTableProps) => {
   }, [fetchUsers]);
 
   const handleDelete = async (userId: string) => {
-    if (
-      !confirm(
-        "Are you sure you want to permanently delete this user? This action cannot be undone.",
-      )
-    )
-      return;
     setLoadingId(userId);
+    setPendingDeleteId(null);
     try {
       await deleteUser(userId);
       toast.success("User deleted");
@@ -255,7 +261,7 @@ const UsersTable = ({ initialUsers, initialTotal }: UsersTableProps) => {
                       <Button
                         variant="outline"
                         size="icon-sm"
-                        onClick={() => handleDelete(user.id)}
+                        onClick={() => setPendingDeleteId(user.id)}
                         disabled={loadingId === user.id}>
                         {loadingId === user.id ?
                           <Loader2Icon className="size-4 animate-spin" />
@@ -293,6 +299,27 @@ const UsersTable = ({ initialUsers, initialTotal }: UsersTableProps) => {
           </div>
         </div>
       )}
+      <AlertDialog
+        open={!!pendingDeleteId}
+        onOpenChange={(open) => !open && setPendingDeleteId(null)}>
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete user</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to permanently delete this user? This action
+              cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => pendingDeleteId && handleDelete(pendingDeleteId)}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -74,7 +74,8 @@ export const getExamResults = async (examId: string) => {
         questionCount,
       })),
     };
-  } catch {
+  } catch (e) {
+    if (e instanceof Error) throw e;
     throw new Error("Failed to fetch exam results");
   }
 };
@@ -120,7 +121,8 @@ export const getAllResults = async () => {
       maxScore: a.maxScore,
       submittedAt: a.submittedAt,
     }));
-  } catch {
+  } catch (e) {
+    if (e instanceof Error) throw e;
     throw new Error("Failed to fetch results");
   }
 };
@@ -165,7 +167,8 @@ export const getResultDetail = async (attemptId: string) => {
     }
 
     return attempt;
-  } catch {
+  } catch (e) {
+    if (e instanceof Error) throw e;
     throw new Error("Failed to fetch result details");
   }
 };
