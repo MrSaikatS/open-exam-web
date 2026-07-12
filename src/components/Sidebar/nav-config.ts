@@ -54,7 +54,11 @@ export const adminNav: NavGroup[] = [
         notActiveFor: ["/admin/exams/new", "/admin/exams/[id]"],
       },
       { title: "Create Exam", url: "/admin/exams/new", icon: "PlusCircle" },
-      { title: "Question Bank", url: "/admin/questions", icon: "BookOpen" },
+      {
+        title: "Question Bank",
+        url: "/admin/questions",
+        icon: "BookOpen",
+      },
     ],
   },
   {

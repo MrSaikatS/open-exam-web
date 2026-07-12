@@ -1,34 +1,14 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import { ArrowLeftIcon } from "lucide-react";
-import BankQuestionForm from "@/components/Exam/BankQuestionForm";
-import { Button } from "@/components/shadcnui/button";
-import { createBankQuestion } from "@/server/bankActions";
+import { redirect } from "next/navigation";
+import { getBankHierarchy } from "@/server/bankActions";
 
-export const metadata: Metadata = {
-  title: "New Question",
-  description: "Create a new bank question",
+/** Legacy /questions/new → first available topic or bank root */
+const LegacyNewQuestionRedirect = async () => {
+  const hierarchy = await getBankHierarchy();
+  const firstTopic = hierarchy.find((s) => s.topics.length > 0)?.topics[0];
+  if (firstTopic) {
+    redirect(`/admin/questions/topics/${firstTopic.id}/new`);
+  }
+  redirect("/admin/questions");
 };
 
-const NewBankQuestionPage = () => {
-  return (
-    <section className="grid gap-8">
-      <div className="flex items-center gap-4">
-        <Link href="/admin/questions">
-          <Button
-            variant="outline"
-            size="icon-lg">
-            <ArrowLeftIcon className="size-4" />
-          </Button>
-        </Link>
-        <h1 className="text-2xl font-medium">New Question</h1>
-      </div>
-      <BankQuestionForm
-        action={createBankQuestion}
-        submitLabel="Create Question"
-      />
-    </section>
-  );
-};
-
-export default NewBankQuestionPage;
+export default LegacyNewQuestionRedirect;

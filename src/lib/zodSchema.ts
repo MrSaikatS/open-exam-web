@@ -112,6 +112,32 @@ export const questionFormSchema = z.object({
 
 export type QuestionFormType = z.infer<typeof questionFormSchema>;
 
+export const bankQuestionFormSchema = questionFormSchema.extend({
+  topicId: z.string().min(1, { error: "Topic is required" }),
+});
+
+export type BankQuestionFormType = z.infer<typeof bankQuestionFormSchema>;
+
+export const subjectFormSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, { error: "Name is required" })
+    .max(100, { error: "Name must not exceed 100 characters" }),
+  description: z
+    .string()
+    .trim()
+    .max(500, { error: "Description must not exceed 500 characters" })
+    .optional()
+    .or(z.literal("")),
+});
+
+export type SubjectFormType = z.infer<typeof subjectFormSchema>;
+
+export const topicFormSchema = subjectFormSchema;
+
+export type TopicFormType = z.infer<typeof topicFormSchema>;
+
 export const createUserSchema = z.object({
   name: z
     .string()
