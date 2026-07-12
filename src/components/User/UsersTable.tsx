@@ -22,6 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../shadcnui/alert-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "../shadcnui/avatar";
 import { Button } from "../shadcnui/button";
 import {
   Select,
@@ -35,6 +36,7 @@ type UserRow = {
   name: string;
   email: string;
   role: string;
+  image: string | null;
   banned: boolean;
   banReason: string | null;
   banExpires: Date | null;
@@ -199,7 +201,17 @@ const UsersTable = ({ initialUsers, initialTotal }: UsersTableProps) => {
                 <tr
                   key={user.id}
                   className="border-border hover:bg-muted/30 border-b last:border-0">
-                  <td className="px-4 py-3 font-medium">{user.name}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <Avatar className="size-8">
+                        <AvatarImage src={user.image ?? undefined} />
+                        <AvatarFallback className="text-xs">
+                          {user.name.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium">{user.name}</span>
+                    </div>
+                  </td>
                   <td className="text-muted-foreground px-4 py-3">
                     {user.email}
                   </td>

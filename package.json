@@ -8,7 +8,7 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "prod": "prisma generate && next build && next start",
     "migrate": "prisma migrate dev && prisma generate",
     "studio": "prisma studio --browser none",
@@ -36,6 +36,7 @@
     "react-toastify": "^11.1.0",
     "sharp": "^0.34.5",
     "tailwind-merge": "^3.6.0",
+    "use-file-picker": "^2.1.4",
     "zod": "^4.4.3"
   },
   "devDependencies": {

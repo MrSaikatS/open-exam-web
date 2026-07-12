@@ -33,7 +33,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 | `bun studio`    | `prisma studio --browser none`               | Headless — open the printed URL manually                                                                                                                                                                                                     |
 | `bun seed`      | `prisma db seed` (runs `tsx prisma/seed.ts`) | Seeds 4 users (password = email). Admin email overridable via `BETTER_AUTH_SEED_ADMIN_EMAIL`. Seeds 10 programming bank questions (5 admin + 5 examiner) via `seedQuestion()` helper — upserts by `{ text, type, createdById }` on each run. |
 | `bun add`       | Bun install                                  | Works, also `bunx` for one-off commands                                                                                                                                                                                                      |
-| `bun typecheck` | `tsc --noEmit`                               | Use instead of `next build` for routine TS checks                                                                                                                                                                                            |
+| `bun typecheck` | `next typegen && tsc --noEmit`               | Regenerates route types then typechecks. Run after adding new routes to avoid `as Route` casts.                                                                                                                                              |
 
 # Prisma
 
@@ -113,7 +113,7 @@ All in `src/server/actions/`, each is `"use server"`, checks session + role owne
 - Create/Detail use `ExamForm` (`src/components/Exam/ExamForm.tsx`) — `"use client"`, `react-hook-form` + `Controller` pattern.
 - Questions use **bank-first** approach: `QuestionsManager` (`src/components/Exam/QuestionsManager.tsx`) has no inline "Add Question" form. Use the "Import from Bank" dialog to copy questions into the exam. Edit/delete work on the exam copy only.
 - `ExamsTable` (`src/components/Exam/ExamsTable.tsx`) — client component with delete/publish actions.
-- Dynamic `Link` hrefs with `typedRoutes: true` require `as Route` cast — `import type { Route } from "next"`. Regenerate `.next/types/link.d.ts` via `next build` after adding new routes.
+- Dynamic `Link` hrefs with `typedRoutes: true` require `as Route` cast — `import type { Route } from "next"`. The same applies to `router.push()` calls. Regenerate `.next/types/link.d.ts` via `bun typecheck` (which runs `next typegen`) after adding new routes — the cast can then be removed.
 - Import is Copy/Snapshot: `importBankQuestions` creates new `Question` rows duplicating all fields. No FK link to bank originals.
 - Admin can delete any exam. Examiners cannot delete published exams.
 - `redirect()` in a server action called from a client component can be misinterpreted as a promise rejection by `.catch()`. Prefer client-side `router.push()` after the action resolves.

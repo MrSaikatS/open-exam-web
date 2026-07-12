@@ -132,3 +132,23 @@ export const createUserSchema = z.object({
 });
 
 export type CreateUserFormType = z.infer<typeof createUserSchema>;
+
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z
+      .string()
+      .min(1, { error: "Current password is required" }),
+    newPassword: z
+      .string()
+      .min(8, { error: "Password must be minimum 8 characters long" })
+      .max(128, { error: "Password must not exceed 128 characters" }),
+    confirmPassword: z
+      .string()
+      .min(1, { error: "Please confirm your new password" }),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    error: "Passwords didn't match",
+    path: ["confirmPassword"],
+  });
+
+export type ChangePasswordFormType = z.infer<typeof changePasswordSchema>;
