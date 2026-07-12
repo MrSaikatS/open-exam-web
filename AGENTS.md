@@ -26,14 +26,14 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 # Commands with quirks
 
-| Command         | What it does                                 | Quirk                                                                                                                                                                                                                                        |
-| --------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bun dev`       | `next dev` (Turbopack)                       |                                                                                                                                                                                                                                              |
-| `bun migrate`   | `prisma migrate dev && prisma generate`      | Use this, not raw `prisma db push`. Prompts for migration name interactively.                                                                                                                                                                |
-| `bun studio`    | `prisma studio --browser none`               | Headless — open the printed URL manually                                                                                                                                                                                                     |
+| Command         | What it does                                 | Quirk                                                                                                                                                                                                                                                     |
+| --------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun dev`       | `next dev` (Turbopack)                       |                                                                                                                                                                                                                                                           |
+| `bun migrate`   | `prisma migrate dev && prisma generate`      | Use this, not raw `prisma db push`. Prompts for migration name interactively.                                                                                                                                                                             |
+| `bun studio`    | `prisma studio --browser none`               | Headless — open the printed URL manually                                                                                                                                                                                                                  |
 | `bun seed`      | `prisma db seed` (runs `tsx prisma/seed.ts`) | Seeds 4 users (password = email). Admin email overridable via `BETTER_AUTH_SEED_ADMIN_EMAIL`. Seeds Programming subject (JavaScript / Web & APIs / CS Fundamentals) + 10 bank questions (5 admin + 5 examiner) upserted by `{ text, type, createdById }`. |
-| `bun add`       | Bun install                                  | Works, also `bunx` for one-off commands                                                                                                                                                                                                      |
-| `bun typecheck` | `next typegen && tsc --noEmit`               | Regenerates route types then typechecks. Run after adding new routes to avoid `as Route` casts.                                                                                                                                              |
+| `bun add`       | Bun install                                  | Works, also `bunx` for one-off commands                                                                                                                                                                                                                   |
+| `bun typecheck` | `next typegen && tsc --noEmit`               | Regenerates route types then typechecks. Run after adding new routes to avoid `as Route` casts.                                                                                                                                                           |
 
 # Prisma
 
@@ -199,7 +199,13 @@ Repeated inline components in page files should be extracted to `src/components/
 - `src/hooks/` — custom React hooks.
 - No CI, no pre-commit hooks.
 
-## Git commits
+## Pull requests
+
+- PR template at `.github/pull_request_template.md` — sections: Description, Type, Related Issue, Changes, Verification.
+- Create PRs with `gh` CLI using `--body-file` (avoid inline `--body`).
+- Prefer `gh pr create --base main --body-file /tmp/body.md` over inline strings.
+
+### Git commits
 
 Use PowerShell here-strings:
 

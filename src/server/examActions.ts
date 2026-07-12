@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/database/dbClient";
+import { examFormSchema, questionFormSchema } from "@/lib/zodSchema";
 
 export const getExams = async () => {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -40,6 +41,8 @@ export const getExams = async () => {
 export const getExamById = async (id: string) => {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/");
+  if (session.user.role !== "admin" && session.user.role !== "examiner")
+    redirect("/");
 
   let exam;
   try {
@@ -71,21 +74,17 @@ export const createExam = async (formData: FormData) => {
   if (session.user.role !== "admin" && session.user.role !== "examiner")
     redirect("/");
 
-  const title = formData.get("title") as string;
-  const description = formData.get("description") as string;
-  const duration = parseInt(formData.get("duration") as string);
-  const startTime = formData.get("startTime") as string;
-  const endTime = formData.get("endTime") as string;
-
   let exam: Awaited<ReturnType<typeof prisma.exam.create>>;
   try {
+    const parsed = examFormSchema.parse(Object.fromEntries(formData));
+
     exam = await prisma.exam.create({
       data: {
-        title,
-        description: description || null,
-        duration,
-        startTime: startTime ? new Date(startTime) : null,
-        endTime: endTime ? new Date(endTime) : null,
+        title: parsed.title,
+        description: parsed.description || null,
+        duration: parsed.duration,
+        startTime: parsed.startTime ? new Date(parsed.startTime) : null,
+        endTime: parsed.endTime ? new Date(parsed.endTime) : null,
         createdById: session.user.id,
       },
     });
@@ -118,20 +117,19 @@ export const updateExam = async (id: string, formData: FormData) => {
     if (session.user.role !== "admin" && exam.createdById !== session.user.id)
       throw new Error("You do not have permission to update this exam");
 
-    const title = formData.get("title") as string;
-    const description = formData.get("description") as string;
-    const duration = parseInt(formData.get("duration") as string);
-    const startTime = formData.get("startTime") as string;
-    const endTime = formData.get("endTime") as string;
+    if (exam.status !== "draft")
+      throw new Error("Cannot update a published exam");
+
+    const parsed = examFormSchema.parse(Object.fromEntries(formData));
 
     await prisma.exam.update({
       where: { id },
       data: {
-        title,
-        description: description || null,
-        duration,
-        startTime: startTime ? new Date(startTime) : null,
-        endTime: endTime ? new Date(endTime) : null,
+        title: parsed.title,
+        description: parsed.description || null,
+        duration: parsed.duration,
+        startTime: parsed.startTime ? new Date(parsed.startTime) : null,
+        endTime: parsed.endTime ? new Date(parsed.endTime) : null,
       },
     });
 
@@ -217,11 +215,10 @@ export const addQuestion = async (examId: string, formData: FormData) => {
     if (session.user.role !== "admin" && exam.createdById !== session.user.id)
       throw new Error("You do not have permission to modify this exam");
 
-    const text = formData.get("text") as string;
-    const type = formData.get("type") as string;
-    const options = formData.get("options") as string;
-    const answer = formData.get("answer") as string;
-    const points = parseInt(formData.get("points") as string);
+    if (exam.status !== "draft")
+      throw new Error("Cannot modify a published exam");
+
+    const parsed = questionFormSchema.parse(Object.fromEntries(formData));
 
     const maxOrder = await prisma.question.findFirst({
       where: { examId },
@@ -232,11 +229,11 @@ export const addQuestion = async (examId: string, formData: FormData) => {
     await prisma.question.create({
       data: {
         examId,
-        text,
-        type,
-        options: options || null,
-        answer: answer || null,
-        points: points || 1,
+        text: parsed.text,
+        type: parsed.type,
+        options: parsed.options || null,
+        answer: parsed.answer,
+        points: parsed.points,
         order: (maxOrder?.order ?? -1) + 1,
       },
     });
@@ -266,20 +263,19 @@ export const updateQuestion = async (id: string, formData: FormData) => {
     )
       throw new Error("You do not have permission to modify this question");
 
-    const text = formData.get("text") as string;
-    const type = formData.get("type") as string;
-    const options = formData.get("options") as string;
-    const answer = formData.get("answer") as string;
-    const points = parseInt(formData.get("points") as string);
+    if (question.exam.status !== "draft")
+      throw new Error("Cannot modify a published exam");
+
+    const parsed = questionFormSchema.parse(Object.fromEntries(formData));
 
     await prisma.question.update({
       where: { id },
       data: {
-        text,
-        type,
-        options: options || null,
-        answer: answer || null,
-        points: points || 1,
+        text: parsed.text,
+        type: parsed.type,
+        options: parsed.options || null,
+        answer: parsed.answer,
+        points: parsed.points,
       },
     });
 
@@ -307,6 +303,9 @@ export const deleteQuestion = async (id: string) => {
       question.exam.createdById !== session.user.id
     )
       throw new Error("You do not have permission to delete this question");
+
+    if (question.exam.status !== "draft")
+      throw new Error("Cannot modify a published exam");
 
     await prisma.question.delete({ where: { id } });
 

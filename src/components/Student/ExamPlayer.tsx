@@ -28,7 +28,6 @@ type Question = {
   text: string;
   type: string;
   options: string | null;
-  answer: string | null;
   points: number;
   order: number;
 };

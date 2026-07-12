@@ -195,7 +195,9 @@ export const createTopic = async (subjectId: string, formData: FormData) => {
   const session = await requireExaminer();
 
   try {
-    const subject = await prisma.subject.findUnique({ where: { id: subjectId } });
+    const subject = await prisma.subject.findUnique({
+      where: { id: subjectId },
+    });
     if (!subject) throw new Error("Subject not found");
 
     const name = (formData.get("name") as string)?.trim();
@@ -485,29 +487,54 @@ export const importBankQuestions = async (
     if (session.user.role !== "admin" && exam.createdById !== session.user.id)
       throw new Error("You do not have permission to modify this exam");
 
+    if (exam.status !== "draft")
+      throw new Error("Cannot modify a published exam");
+
     const bankQuestions = await prisma.bankQuestion.findMany({
       where: { id: { in: questionIds } },
     });
 
-    const maxOrder = await prisma.question.findFirst({
-      where: { examId },
-      orderBy: { order: "desc" },
-      select: { order: true },
-    });
+    let lastError: Error | null = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        await prisma.$transaction(async (tx) => {
+          const maxOrder = await tx.question.findFirst({
+            where: { examId },
+            orderBy: { order: "desc" },
+            select: { order: true },
+          });
 
-    let order = (maxOrder?.order ?? -1) + 1;
+          let order = (maxOrder?.order ?? -1) + 1;
 
-    await prisma.question.createMany({
-      data: bankQuestions.map((q) => ({
-        examId,
-        text: q.text,
-        type: q.type,
-        options: q.options,
-        answer: q.answer,
-        points: q.points,
-        order: order++,
-      })),
-    });
+          await tx.question.createMany({
+            data: bankQuestions.map((q) => ({
+              examId,
+              text: q.text,
+              type: q.type,
+              options: q.options,
+              answer: q.answer,
+              points: q.points,
+              order: order++,
+            })),
+          });
+        });
+        lastError = null;
+        break;
+      } catch (e) {
+        if (
+          typeof e === "object" &&
+          e !== null &&
+          "code" in e &&
+          (e as { code: string }).code === "P2034"
+        ) {
+          lastError =
+            e instanceof Error ? e : new Error("Serialization conflict");
+          continue;
+        }
+        throw e;
+      }
+    }
+    if (lastError) throw lastError;
 
     const basePath = basePathFor(session.user.role);
     revalidatePath(`${basePath}/exams/${examId}`);

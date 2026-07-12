@@ -67,6 +67,14 @@ export const getAssignedStudents = async (examId: string) => {
   if (!session) redirect("/");
 
   try {
+    const exam = await prisma.exam.findUnique({ where: { id: examId } });
+    if (!exam) throw new Error("Exam not found");
+
+    if (session.user.role !== "admin" && exam.createdById !== session.user.id)
+      throw new Error(
+        "You do not have permission to view this exam's assignments",
+      );
+
     return await prisma.examAssignment.findMany({
       where: { examId },
       include: {
@@ -84,6 +92,14 @@ export const getAvailableStudents = async (examId: string) => {
   if (!session) redirect("/");
 
   try {
+    const exam = await prisma.exam.findUnique({ where: { id: examId } });
+    if (!exam) throw new Error("Exam not found");
+
+    if (session.user.role !== "admin" && exam.createdById !== session.user.id)
+      throw new Error(
+        "You do not have permission to view this exam's assignments",
+      );
+
     const assigned = await prisma.examAssignment.findMany({
       where: { examId },
       select: { userId: true },

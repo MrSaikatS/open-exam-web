@@ -17,12 +17,13 @@ const getProctorExamIds = async (proctorId: string) => {
 export const getExamResults = async (examId: string) => {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/");
-  if (
-    session.user.role !== "admin" &&
-    session.user.role !== "examiner" &&
-    session.user.role !== "proctor"
-  )
-    redirect("/");
+
+  const canRead = await auth.api
+    .userHasPermission({
+      body: { userId: session.user.id, permissions: { result: ["read"] } },
+    })
+    .catch(() => false);
+  if (!canRead) redirect("/");
 
   try {
     const exam = await prisma.exam.findUnique({
