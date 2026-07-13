@@ -45,6 +45,9 @@ export const deleteImage = async (imageUrl: string) => {
 
   if (!UUID_JPG_RE.test(imageUrl)) throw new Error("Invalid image URL");
 
+  if (imageUrl !== session.user.image && session.user.role !== "admin")
+    throw new Error("Unauthorized");
+
   const resolved = resolve(`./public${imageUrl}`);
   const uploadsDir = resolve("./public/uploads");
   if (!resolved.startsWith(uploadsDir)) throw new Error("Invalid image URL");

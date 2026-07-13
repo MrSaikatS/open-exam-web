@@ -115,7 +115,7 @@ export const questionFormSchema = z
     points: z.coerce
       .number({ error: "Points must be a number" })
       .int({ error: "Points must be a whole number" })
-      .min(1, { error: "Points must be at least 1" })
+      .min(0, { error: "Points must be at least 0" })
       .max(999, { error: "Points must not exceed 999" }),
   })
   .refine(

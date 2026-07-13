@@ -2,7 +2,9 @@
 
 <!-- What problem does this solve? Why were these changes made? -->
 
-**Type:** <!-- Bug fix / New feature / Refactor / Breaking change / Cosmetic / Documentation / Workflow -->
+## Type
+
+<!-- Bug fix / New feature / Refactor / Breaking change / Cosmetic / Documentation / Workflow -->
 
 ## Related Issue
 

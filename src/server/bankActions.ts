@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/database/dbClient";
+import { bankQuestionFormSchema } from "@/lib/zodSchema";
 
 const requireExaminer = async () => {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -366,26 +367,21 @@ export const createBankQuestion = async (formData: FormData) => {
   const session = await requireExaminer();
 
   try {
-    const text = formData.get("text") as string;
-    const type = formData.get("type") as string;
-    const options = formData.get("options") as string;
-    const answer = formData.get("answer") as string;
-    const points = parseInt(formData.get("points") as string);
-    const topicId = formData.get("topicId") as string;
+    const parsed = bankQuestionFormSchema.parse(Object.fromEntries(formData));
 
-    if (!topicId) throw new Error("Topic is required");
-
-    const topic = await prisma.topic.findUnique({ where: { id: topicId } });
+    const topic = await prisma.topic.findUnique({
+      where: { id: parsed.topicId },
+    });
     if (!topic) throw new Error("Topic not found");
 
     await prisma.bankQuestion.create({
       data: {
-        text,
-        type,
-        options: options || null,
-        answer: answer || null,
-        points: points || 1,
-        topicId,
+        text: parsed.text,
+        type: parsed.type,
+        options: parsed.options || null,
+        answer: parsed.answer,
+        points: parsed.points,
+        topicId: parsed.topicId,
         createdById: session.user.id,
       },
     });
@@ -393,7 +389,7 @@ export const createBankQuestion = async (formData: FormData) => {
     const base = basePathFor(session.user.role);
     revalidateBank(
       session.user.role,
-      `${base}/questions/topics/${topicId}`,
+      `${base}/questions/topics/${parsed.topicId}`,
       `${base}/questions/subjects/${topic.subjectId}`,
       `${base}/exams`,
     );
@@ -410,27 +406,22 @@ export const updateBankQuestion = async (id: string, formData: FormData) => {
     const question = await prisma.bankQuestion.findUnique({ where: { id } });
     if (!question) throw new Error("Bank question not found");
 
-    const text = formData.get("text") as string;
-    const type = formData.get("type") as string;
-    const options = formData.get("options") as string;
-    const answer = formData.get("answer") as string;
-    const points = parseInt(formData.get("points") as string);
-    const topicId = formData.get("topicId") as string;
+    const parsed = bankQuestionFormSchema.parse(Object.fromEntries(formData));
 
-    if (!topicId) throw new Error("Topic is required");
-
-    const topic = await prisma.topic.findUnique({ where: { id: topicId } });
+    const topic = await prisma.topic.findUnique({
+      where: { id: parsed.topicId },
+    });
     if (!topic) throw new Error("Topic not found");
 
     await prisma.bankQuestion.update({
       where: { id },
       data: {
-        text,
-        type,
-        options: options || null,
-        answer: answer || null,
-        points: points || 1,
-        topicId,
+        text: parsed.text,
+        type: parsed.type,
+        options: parsed.options || null,
+        answer: parsed.answer,
+        points: parsed.points,
+        topicId: parsed.topicId,
       },
     });
 
@@ -438,7 +429,7 @@ export const updateBankQuestion = async (id: string, formData: FormData) => {
     revalidateBank(
       session.user.role,
       `${base}/questions/${id}`,
-      `${base}/questions/topics/${topicId}`,
+      `${base}/questions/topics/${parsed.topicId}`,
       `${base}/questions/topics/${question.topicId}`,
       `${base}/questions/subjects/${topic.subjectId}`,
     );
@@ -497,27 +488,30 @@ export const importBankQuestions = async (
     let lastError: Error | null = null;
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        await prisma.$transaction(async (tx) => {
-          const maxOrder = await tx.question.findFirst({
-            where: { examId },
-            orderBy: { order: "desc" },
-            select: { order: true },
-          });
+        await prisma.$transaction(
+          async (tx) => {
+            const maxOrder = await tx.question.findFirst({
+              where: { examId },
+              orderBy: { order: "desc" },
+              select: { order: true },
+            });
 
-          let order = (maxOrder?.order ?? -1) + 1;
+            let order = (maxOrder?.order ?? -1) + 1;
 
-          await tx.question.createMany({
-            data: bankQuestions.map((q) => ({
-              examId,
-              text: q.text,
-              type: q.type,
-              options: q.options,
-              answer: q.answer,
-              points: q.points,
-              order: order++,
-            })),
-          });
-        });
+            await tx.question.createMany({
+              data: bankQuestions.map((q) => ({
+                examId,
+                text: q.text,
+                type: q.type,
+                options: q.options,
+                answer: q.answer,
+                points: q.points,
+                order: order++,
+              })),
+            });
+          },
+          { isolationLevel: "Serializable" },
+        );
         lastError = null;
         break;
       } catch (e) {

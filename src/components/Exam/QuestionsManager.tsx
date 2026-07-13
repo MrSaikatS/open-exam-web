@@ -258,13 +258,18 @@ const ImportBankDialog = ({ examId }: { examId: string }) => {
 
   const loadQuestions = useCallback(async () => {
     setFetching(true);
-    const [questions, tree] = await Promise.all([
-      getBankQuestions(),
-      getBankHierarchy(),
-    ]);
-    setBankQuestions(questions);
-    setHierarchy(tree);
-    setFetching(false);
+    try {
+      const [questions, tree] = await Promise.all([
+        getBankQuestions(),
+        getBankHierarchy(),
+      ]);
+      setBankQuestions(questions);
+      setHierarchy(tree);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to load questions");
+    } finally {
+      setFetching(false);
+    }
   }, []);
 
   const handleOpenChange = (nextOpen: boolean) => {

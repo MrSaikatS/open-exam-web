@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/database/dbClient";
+import { ZodError } from "zod";
 import { examFormSchema, questionFormSchema } from "@/lib/zodSchema";
 
 export const getExams = async () => {
@@ -41,8 +42,13 @@ export const getExams = async () => {
 export const getExamById = async (id: string) => {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/");
-  if (session.user.role !== "admin" && session.user.role !== "examiner")
-    redirect("/");
+
+  const { success: canRead } = await auth.api
+    .userHasPermission({
+      body: { userId: session.user.id, permissions: { exam: ["read"] } },
+    })
+    .catch(() => ({ success: false as const }));
+  if (!canRead) redirect("/");
 
   let exam;
   try {
@@ -97,6 +103,16 @@ export const createExam = async (formData: FormData) => {
       revalidateTag("examiner-dashboard", "max");
     }
   } catch (e) {
+    if (e instanceof ZodError)
+      throw new Error(
+        e.issues
+          .map((i) =>
+            [i.path.length ? i.path.join(".") : "", i.message]
+              .filter(Boolean)
+              .join(": "),
+          )
+          .join("; "),
+      );
     if (e instanceof Error) throw e;
     throw new Error("Failed to create exam");
   }
@@ -141,6 +157,16 @@ export const updateExam = async (id: string, formData: FormData) => {
       revalidateTag("examiner-dashboard", "max");
     }
   } catch (e) {
+    if (e instanceof ZodError)
+      throw new Error(
+        e.issues
+          .map((i) =>
+            [i.path.length ? i.path.join(".") : "", i.message]
+              .filter(Boolean)
+              .join(": "),
+          )
+          .join("; "),
+      );
     if (e instanceof Error) throw e;
     throw new Error("Failed to update exam");
   }
@@ -241,6 +267,16 @@ export const addQuestion = async (examId: string, formData: FormData) => {
     const basePath = session.user.role === "admin" ? "/admin" : "/examiner";
     revalidatePath(`${basePath}/exams/${examId}`);
   } catch (e) {
+    if (e instanceof ZodError)
+      throw new Error(
+        e.issues
+          .map((i) =>
+            [i.path.length ? i.path.join(".") : "", i.message]
+              .filter(Boolean)
+              .join(": "),
+          )
+          .join("; "),
+      );
     if (e instanceof Error) throw e;
     throw new Error("Failed to add question");
   }
@@ -282,6 +318,16 @@ export const updateQuestion = async (id: string, formData: FormData) => {
     const basePath = session.user.role === "admin" ? "/admin" : "/examiner";
     revalidatePath(`${basePath}/exams/${question.examId}`);
   } catch (e) {
+    if (e instanceof ZodError)
+      throw new Error(
+        e.issues
+          .map((i) =>
+            [i.path.length ? i.path.join(".") : "", i.message]
+              .filter(Boolean)
+              .join(": "),
+          )
+          .join("; "),
+      );
     if (e instanceof Error) throw e;
     throw new Error("Failed to update question");
   }

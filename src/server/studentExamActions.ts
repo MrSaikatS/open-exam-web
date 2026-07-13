@@ -250,50 +250,53 @@ const autoGrade = (
 };
 
 const submitAttempt = async (attemptId: string, examId: string) => {
-  await prisma.$transaction(async (tx) => {
-    const current = await tx.examAttempt.findUnique({
-      where: { id: attemptId },
-      select: { status: true },
-    });
-    if (!current || current.status !== "in_progress")
-      throw new Error("Exam already submitted");
+  await prisma.$transaction(
+    async (tx) => {
+      const current = await tx.examAttempt.findUnique({
+        where: { id: attemptId },
+        select: { status: true },
+      });
+      if (!current || current.status !== "in_progress")
+        throw new Error("Exam already submitted");
 
-    const questions = await tx.question.findMany({
-      where: { examId },
-      orderBy: { order: "asc" },
-    });
+      const questions = await tx.question.findMany({
+        where: { examId },
+        orderBy: { order: "asc" },
+      });
 
-    const answers = await tx.answer.findMany({
-      where: { attemptId },
-    });
+      const answers = await tx.answer.findMany({
+        where: { attemptId },
+      });
 
-    const answerMap = new Map(answers.map((a) => [a.questionId, a]));
+      const answerMap = new Map(answers.map((a) => [a.questionId, a]));
 
-    let autoScore = 0;
-    for (const question of questions) {
-      const answer = answerMap.get(question.id);
-      const text = answer?.text ?? "";
-      const score = autoGrade(text, question);
-      autoScore += score;
+      let autoScore = 0;
+      for (const question of questions) {
+        const answer = answerMap.get(question.id);
+        const text = answer?.text ?? "";
+        const score = autoGrade(text, question);
+        autoScore += score;
 
-      if (answer) {
-        await tx.answer.update({
-          where: { id: answer.id },
-          data: { score },
-        });
+        if (answer) {
+          await tx.answer.update({
+            where: { id: answer.id },
+            data: { score },
+          });
+        }
       }
-    }
 
-    await tx.examAttempt.update({
-      where: { id: attemptId },
-      data: {
-        status: "submitted",
-        submittedAt: new Date(),
-        autoScore,
-        totalScore: autoScore,
-      },
-    });
-  });
+      await tx.examAttempt.update({
+        where: { id: attemptId },
+        data: {
+          status: "submitted",
+          submittedAt: new Date(),
+          autoScore,
+          totalScore: autoScore,
+        },
+      });
+    },
+    { timeout: 30_000 },
+  );
 };
 
 export const submitExam = async (attemptId: string) => {
@@ -364,7 +367,7 @@ export const getResultDetail = async (attemptId: string) => {
   if (!attempt || attempt.userId !== session.user.id)
     redirect("/student/results");
 
-  if (attempt.status === "in_progress") redirect("/student/exams");
+  if (attempt.status !== "submitted") redirect("/student/exams");
 
   return attempt;
 };
