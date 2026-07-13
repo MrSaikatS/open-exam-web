@@ -4,7 +4,7 @@ import { Loader2Icon, Trash2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "react-toastify";
-import { deleteBankQuestion } from "@/server/actions/bank";
+import { deleteBankQuestion } from "@/server/bankActions";
 import { Button } from "../shadcnui/button";
 import {
   Dialog,

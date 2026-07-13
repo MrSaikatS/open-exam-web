@@ -5,9 +5,9 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 const PrivateLayout = ({ children }: LayoutProps) => (
-  <AuthGate>
-    <Suspense fallback={null}>{children}</Suspense>
-  </AuthGate>
+  <Suspense fallback={null}>
+    <AuthGate>{children}</AuthGate>
+  </Suspense>
 );
 
 const AuthGate = async ({ children }: LayoutProps) => {

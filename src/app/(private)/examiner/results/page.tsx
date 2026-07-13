@@ -6,7 +6,7 @@ import { EyeIcon } from "lucide-react";
 import { Button } from "@/components/shadcnui/button";
 import { StatusBadge } from "@/components/Results/StatusBadge";
 import { PctBadge } from "@/components/Results/PctBadge";
-import { getAllResults } from "@/server/actions/results";
+import { getAllResults } from "@/server/resultsActions";
 
 export const metadata: Metadata = {
   title: "All Results",

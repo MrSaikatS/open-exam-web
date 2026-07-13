@@ -75,12 +75,61 @@ async function main() {
     return;
   }
 
+  const ensureSubject = async (name: string, description?: string) => {
+    const existing = await prisma.subject.findUnique({ where: { name } });
+    if (existing) return existing;
+    return prisma.subject.create({
+      data: { name, description: description ?? null },
+    });
+  };
+
+  const ensureTopic = async (
+    subjectId: string,
+    name: string,
+    description?: string,
+  ) => {
+    const existing = await prisma.topic.findUnique({
+      where: { subjectId_name: { subjectId, name } },
+    });
+    if (existing) return existing;
+    return prisma.topic.create({
+      data: { subjectId, name, description: description ?? null },
+    });
+  };
+
+  const programming = await ensureSubject(
+    "Programming",
+    "Software development and computer science topics",
+  );
+  const jsTopic = await ensureTopic(
+    programming.id,
+    "JavaScript",
+    "Language fundamentals and runtimes",
+  );
+  const webTopic = await ensureTopic(
+    programming.id,
+    "Web & APIs",
+    "HTTP, REST, and web concepts",
+  );
+  const csTopic = await ensureTopic(
+    programming.id,
+    "CS Fundamentals",
+    "Algorithms, OOP, databases, and tooling",
+  );
+
+  // Keep Uncategorized/General if present from migration (for orphan questions)
+  await ensureSubject(
+    "Uncategorized",
+    "Default subject for questions without a category",
+  );
+
   const seedQuestion = async (
     text: string,
     type: string,
     answer: string,
     points: number,
     createdById: string,
+    topicId: string,
     options?: string,
   ) => {
     const existing = await prisma.bankQuestion.findFirst({
@@ -90,7 +139,14 @@ async function main() {
     if (existing) {
       await prisma.bankQuestion.update({
         where: { id: existing.id },
-        data: { text, type, options: options ?? null, answer, points },
+        data: {
+          text,
+          type,
+          options: options ?? null,
+          answer,
+          points,
+          topicId,
+        },
       });
     } else {
       await prisma.bankQuestion.create({
@@ -100,6 +156,7 @@ async function main() {
           options: options ?? null,
           answer,
           points,
+          topicId,
           createdById,
         },
       });
@@ -112,6 +169,7 @@ async function main() {
     options?: string;
     answer: string;
     points: number;
+    topicId: string;
   }[] = [
     {
       text: "Which of the following are primitive data types in JavaScript?",
@@ -119,6 +177,7 @@ async function main() {
       options: "String\nNumber\nObject\nBoolean\nArray",
       answer: "String\nNumber\nBoolean",
       points: 2,
+      topicId: jsTopic.id,
     },
     {
       text: "What does the 'this' keyword refer to in a JavaScript arrow function?",
@@ -127,6 +186,7 @@ async function main() {
         "The function itself\nThe global object\nThe enclosing lexical context\nThe new instance",
       answer: "The enclosing lexical context",
       points: 2,
+      topicId: jsTopic.id,
     },
     {
       text: "TypeScript is a superset of JavaScript that adds optional static typing.",
@@ -134,12 +194,14 @@ async function main() {
       options: "True\nFalse",
       answer: "True",
       points: 1,
+      topicId: jsTopic.id,
     },
     {
       text: "What does REST stand for in web API design?",
       type: "short_answer",
       answer: "Representational, State, Transfer",
       points: 2,
+      topicId: webTopic.id,
     },
     {
       text: "Which time complexity does an efficient sorting algorithm like merge sort have?",
@@ -147,6 +209,7 @@ async function main() {
       options: "O(n)\nO(n²)\nO(n log n)\nO(log n)",
       answer: "O(n log n)",
       points: 2,
+      topicId: csTopic.id,
     },
   ];
 
@@ -156,6 +219,7 @@ async function main() {
     options?: string;
     answer: string;
     points: number;
+    topicId: string;
   }[] = [
     {
       text: "In OOP, encapsulation refers to bundling data with the methods that operate on it.",
@@ -163,6 +227,7 @@ async function main() {
       options: "True\nFalse",
       answer: "True",
       points: 1,
+      topicId: csTopic.id,
     },
     {
       text: "Which design pattern ensures a class has only one instance?",
@@ -170,12 +235,14 @@ async function main() {
       options: "Factory\nObserver\nSingleton\nDecorator",
       answer: "Singleton",
       points: 2,
+      topicId: csTopic.id,
     },
     {
       text: "What Git command is used to temporarily save uncommitted changes?",
       type: "short_answer",
       answer: "stash",
       points: 1,
+      topicId: csTopic.id,
     },
     {
       text: "Which of the following are JavaScript runtime environments?",
@@ -183,6 +250,7 @@ async function main() {
       options: "Node.js\nDeno\nPython\nBun",
       answer: "Node.js\nDeno\nBun",
       points: 2,
+      topicId: jsTopic.id,
     },
     {
       text: "What does ACID stand for in database transactions?",
@@ -191,11 +259,20 @@ async function main() {
         "Atomicity, Consistency, Isolation, Durability\nAvailability, Consistency, Isolation, Durability\nAtomicity, Consistency, Integrity, Durability\nAtomicity, Control, Isolation, Distribution",
       answer: "Atomicity, Consistency, Isolation, Durability",
       points: 2,
+      topicId: csTopic.id,
     },
   ];
 
   for (const q of adminQuestions) {
-    await seedQuestion(q.text, q.type, q.answer, q.points, admin.id, q.options);
+    await seedQuestion(
+      q.text,
+      q.type,
+      q.answer,
+      q.points,
+      admin.id,
+      q.topicId,
+      q.options,
+    );
   }
 
   for (const q of examinerQuestions) {
@@ -205,11 +282,14 @@ async function main() {
       q.answer,
       q.points,
       examiner.id,
+      q.topicId,
       q.options,
     );
   }
 
-  console.log("Seeded 10 programming bank questions (5 admin, 5 examiner)");
+  console.log(
+    "Seeded Programming subject (JS / Web & APIs / CS Fundamentals) with 10 bank questions",
+  );
 }
 
 main()

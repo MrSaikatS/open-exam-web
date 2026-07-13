@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowLeftIcon } from "lucide-react";
 import { Button } from "@/components/shadcnui/button";
 import { ProctorExamMonitor } from "@/components/Proctor/ProctorExamMonitor";
-import { getExamProgress } from "@/server/actions/proctor";
+import { getExamProgress } from "@/server/proctorActions";
 
 export const metadata: Metadata = {
   title: "Monitor Exam",

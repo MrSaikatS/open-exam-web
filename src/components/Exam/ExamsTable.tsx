@@ -6,7 +6,7 @@ import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "react-toastify";
-import { deleteExam, publishExam } from "@/server/actions/exam";
+import { deleteExam, publishExam } from "@/server/examActions";
 import { Button } from "../shadcnui/button";
 import {
   Dialog,

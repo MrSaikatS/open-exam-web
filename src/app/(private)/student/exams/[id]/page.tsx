@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { startExam, getAttemptQuestions } from "@/server/actions/studentExam";
+import { startExam, getAttemptQuestions } from "@/server/studentExamActions";
 import { ExamPlayer } from "@/components/Student/ExamPlayer";
 
 export const metadata: Metadata = {

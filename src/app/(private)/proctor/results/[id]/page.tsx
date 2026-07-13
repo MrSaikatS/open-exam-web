@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { ArrowLeftIcon } from "lucide-react";
 import { Button } from "@/components/shadcnui/button";
-import { getResultDetail } from "@/server/actions/results";
+import { getResultDetail } from "@/server/resultsActions";
 import { ResultReview } from "@/components/Student/ResultReview";
 
 export const metadata: Metadata = {

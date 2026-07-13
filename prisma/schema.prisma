@@ -139,6 +139,35 @@ model ExamProctor {
   @@map("exam_proctor")
 }
 
+model Subject {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  topics      Topic[]
+
+  @@unique([name])
+  @@map("subject")
+}
+
+model Topic {
+  id          String         @id @default(uuid())
+  name        String
+  description String?
+  order       Int            @default(0)
+  subjectId   String
+  subject     Subject        @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  questions   BankQuestion[]
+
+  @@unique([subjectId, name])
+  @@index([subjectId])
+  @@map("topic")
+}
+
 model BankQuestion {
   id          String   @id @default(uuid())
   text        String
@@ -146,12 +175,15 @@ model BankQuestion {
   options     String?
   answer      String?
   points      Int      @default(1)
+  topicId     String
+  topic       Topic    @relation(fields: [topicId], references: [id], onDelete: Restrict)
   createdById String
   createdBy   User     @relation(fields: [createdById], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([createdById])
+  @@index([topicId])
   @@map("bank_question")
 }
 

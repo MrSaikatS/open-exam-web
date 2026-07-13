@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { format, isAfter, isBefore } from "date-fns";
-import { getStudentExams } from "@/server/actions/studentExam";
+import { getStudentExams } from "@/server/studentExamActions";
 import { Badge } from "@/components/shadcnui/badge";
 import { Button } from "@/components/shadcnui/button";
 import {

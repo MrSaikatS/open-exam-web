@@ -1,20 +1,24 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { LogOutIcon } from "lucide-react";
+import { LogOutIcon, SettingsIcon } from "lucide-react";
 import {
   SidebarProvider,
   SidebarInset,
   SidebarTrigger,
 } from "@/components/shadcnui/sidebar";
 import { Separator } from "@/components/shadcnui/separator";
-import { Avatar, AvatarFallback } from "@/components/shadcnui/avatar";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/shadcnui/avatar";
+import { Badge } from "@/components/shadcnui/badge";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuGroup,
   DropdownMenuSeparator,
 } from "@/components/shadcnui/dropdown-menu";
@@ -70,13 +74,41 @@ const SidebarLayout = ({
                 <Avatar
                   size="sm"
                   className="cursor-pointer">
+                  <AvatarImage src={session?.user?.image ?? undefined} />
                   <AvatarFallback>{initials}</AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuGroup>
-                  <DropdownMenuLabel>{session?.user?.email}</DropdownMenuLabel>
+                  <div className="flex items-center gap-3 px-2 py-1.5">
+                    <Avatar size="sm">
+                      <AvatarImage src={session?.user?.image ?? undefined} />
+                      <AvatarFallback>{initials}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex min-w-0 flex-col">
+                      <div className="flex items-center gap-2">
+                        <span className="truncate text-sm font-medium">
+                          {session?.user?.name ?? "User"}
+                        </span>
+                        <Badge
+                          variant="outline"
+                          className="shrink-0 px-1.5 py-0 text-[10px] leading-none capitalize">
+                          {session?.user?.role}
+                        </Badge>
+                      </div>
+                      <span className="text-muted-foreground truncate text-xs">
+                        {session?.user?.email}
+                      </span>
+                    </div>
+                  </div>
                 </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={() => router.push("/settings")}>
+                  <SettingsIcon />
+                  Settings
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="cursor-pointer"

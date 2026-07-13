@@ -26,14 +26,14 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 # Commands with quirks
 
-| Command         | What it does                                 | Quirk                                                                                                                                                                                                                                        |
-| --------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bun dev`       | `next dev` (Turbopack)                       |                                                                                                                                                                                                                                              |
-| `bun migrate`   | `prisma migrate dev && prisma generate`      | Use this, not raw `prisma db push`. Prompts for migration name interactively.                                                                                                                                                                |
-| `bun studio`    | `prisma studio --browser none`               | Headless — open the printed URL manually                                                                                                                                                                                                     |
-| `bun seed`      | `prisma db seed` (runs `tsx prisma/seed.ts`) | Seeds 4 users (password = email). Admin email overridable via `BETTER_AUTH_SEED_ADMIN_EMAIL`. Seeds 10 programming bank questions (5 admin + 5 examiner) via `seedQuestion()` helper — upserts by `{ text, type, createdById }` on each run. |
-| `bun add`       | Bun install                                  | Works, also `bunx` for one-off commands                                                                                                                                                                                                      |
-| `bun typecheck` | `tsc --noEmit`                               | Use instead of `next build` for routine TS checks                                                                                                                                                                                            |
+| Command         | What it does                                 | Quirk                                                                                                                                                                                                                                                     |
+| --------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun dev`       | `next dev` (Turbopack)                       |                                                                                                                                                                                                                                                           |
+| `bun migrate`   | `prisma migrate dev && prisma generate`      | Use this, not raw `prisma db push`. Prompts for migration name interactively.                                                                                                                                                                             |
+| `bun studio`    | `prisma studio --browser none`               | Headless — open the printed URL manually                                                                                                                                                                                                                  |
+| `bun seed`      | `prisma db seed` (runs `tsx prisma/seed.ts`) | Seeds 4 users (password = email). Admin email overridable via `BETTER_AUTH_SEED_ADMIN_EMAIL`. Seeds Programming subject (JavaScript / Web & APIs / CS Fundamentals) + 10 bank questions (5 admin + 5 examiner) upserted by `{ text, type, createdById }`. |
+| `bun add`       | Bun install                                  | Works, also `bunx` for one-off commands                                                                                                                                                                                                                   |
+| `bun typecheck` | `next typegen && tsc --noEmit`               | Regenerates route types then typechecks. Run after adding new routes to avoid `as Route` casts.                                                                                                                                                           |
 
 # Prisma
 
@@ -43,7 +43,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Adapter: `PrismaLibSql` — used in both `dbClient.ts` and `prisma/seed.ts`.
 - Build fails without `prisma generate`. Scripts `build` and `prod` do it automatically; raw `next build` will fail.
 - `generated/` is gitignored and ESLint-ignored.
-- 10 models: User, Session, Account, Verification, Exam, ExamAssignment, **BankQuestion**, **Question**, **ExamAttempt**, **Answer**.
+- Models include: User, Session, Account, Verification, Exam, ExamAssignment, ExamProctor, **Subject**, **Topic**, **BankQuestion**, **Question**, **ExamAttempt**, **Answer**.
 
 # Question storage (critical)
 
@@ -76,36 +76,36 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ├── admin/                  # role=admin only
 │   ├── page.tsx            # Dashboard
 │   ├── exams/              # CRUD + assign + assign-proctor + per-exam results
-│   ├── questions/          # Question bank (list, new, [id])
+│   ├── questions/          # Subject → Topic → Question bank (drill-down)
 │   ├── results/            # List + detail
+│   ├── settings/           # Profile, password, avatar
 │   └── users/              # User management
 ├── examiner/               # role=examiner only
 │   ├── page.tsx            # Dashboard
 │   ├── exams/              # CRUD (scoped to own exams) + assign + results
-│   ├── questions/          # Question bank (list, new, [id], no delete)
+│   ├── questions/          # Same bank hierarchy (no delete subject/topic/question)
+│   ├── settings/
 │   └── results/            # List + detail
 ├── proctor/                # role=proctor only
 │   ├── page.tsx            # Dashboard
 │   ├── exams/              # List + live monitor (ProctorExamMonitor, 2s polling)
+│   ├── settings/
 │   └── results/            # List + detail
 └── student/                # role=student only
     ├── page.tsx            # Dashboard
     ├── exams/              # List + take exam (ExamPlayer)
+    ├── settings/
     └── results/            # List + detail (ResultReview)
 ```
 
-# Server actions
+# Question bank hierarchy
 
-All in `src/server/actions/`, each is `"use server"`, checks session + role ownership.
-
-| File             | Actions                                                                                                                                                                |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `exam.ts`        | `getExams`, `getExamById`, `createExam`, `updateExam`, `deleteExam`, `publishExam`, `addQuestion`, `updateQuestion`, `deleteQuestion`                                  |
-| `bank.ts`        | `getBankQuestions`, `getBankQuestionById`, `createBankQuestion`, `updateBankQuestion`, `deleteBankQuestion` (admin-only), `importBankQuestions(examId, questionIds[])` |
-| `studentExam.ts` | `getStudentExams`, `startExam`, `getAttemptQuestions`, `saveAnswer`, `submitExam`, `getStudentResults`, `getResultDetail`                                              |
-| `assignment.ts`  | `assignExam`, `unassignExam`, `getAssignedStudents`, `getAvailableStudents`                                                                                            |
-| `proctor.ts`     | `assignProctor`, `unassignProctor`, `getAssignedProctors`, `getAvailableProctors`, `getProctorExams`, `getExamProgress`                                                |
-| `results.ts`     | `getExamResults`, `getAllResults`, `getResultDetail` (admin/examiner view)                                                                                             |
+- Structure: **Subject → Topic → BankQuestion** (shared global taxonomy).
+- Routes: `/questions` (subjects) → `/questions/subjects/[subjectId]` (topics) → `/questions/topics/[topicId]` (questions) → `/questions/topics/[topicId]/new` + `/questions/[id]` (edit).
+- Every bank question **requires** a `topicId`. Migration seeds **Uncategorized → General** for existing rows.
+- Examiners can create subjects/topics; **only admin** can delete subjects/topics/questions, and only when empty (no cascade wipe).
+- Exam `Question` rows stay flat snapshots — no FK to subject/topic on import.
+- Import dialog filters by subject + topic + search.
 
 # Exam CRUD conventions
 
@@ -113,7 +113,7 @@ All in `src/server/actions/`, each is `"use server"`, checks session + role owne
 - Create/Detail use `ExamForm` (`src/components/Exam/ExamForm.tsx`) — `"use client"`, `react-hook-form` + `Controller` pattern.
 - Questions use **bank-first** approach: `QuestionsManager` (`src/components/Exam/QuestionsManager.tsx`) has no inline "Add Question" form. Use the "Import from Bank" dialog to copy questions into the exam. Edit/delete work on the exam copy only.
 - `ExamsTable` (`src/components/Exam/ExamsTable.tsx`) — client component with delete/publish actions.
-- Dynamic `Link` hrefs with `typedRoutes: true` require `as Route` cast — `import type { Route } from "next"`. Regenerate `.next/types/link.d.ts` via `next build` after adding new routes.
+- Dynamic `Link` hrefs with `typedRoutes: true` require `as Route` cast — `import type { Route } from "next"`. The same applies to `router.push()` calls. Regenerate `.next/types/link.d.ts` via `bun typecheck` (which runs `next typegen`) after adding new routes — the cast can then be removed.
 - Import is Copy/Snapshot: `importBankQuestions` creates new `Question` rows duplicating all fields. No FK link to bank originals.
 - Admin can delete any exam. Examiners cannot delete published exams.
 - `redirect()` in a server action called from a client component can be misinterpreted as a promise rejection by `.catch()`. Prefer client-side `router.push()` after the action resolves.
@@ -199,7 +199,13 @@ Repeated inline components in page files should be extracted to `src/components/
 - `src/hooks/` — custom React hooks.
 - No CI, no pre-commit hooks.
 
-## Git commits
+## Pull requests
+
+- PR template at `.github/pull_request_template.md` — sections: Description, Type, Related Issue, Changes, Verification.
+- Create PRs with `gh` CLI using `--body-file` (avoid inline `--body`).
+- Prefer `gh pr create --base main --body-file /tmp/body.md` over inline strings.
+
+### Git commits
 
 Use PowerShell here-strings:
 

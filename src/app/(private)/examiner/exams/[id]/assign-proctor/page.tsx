@@ -3,11 +3,11 @@ import Link from "next/link";
 import { ArrowLeftIcon } from "lucide-react";
 import { AssignProctors } from "@/components/Exam/AssignProctors";
 import { Button } from "@/components/shadcnui/button";
-import { getExamById } from "@/server/actions/exam";
+import { getExamById } from "@/server/examActions";
 import {
   getAssignedProctors,
   getAvailableProctors,
-} from "@/server/actions/proctor";
+} from "@/server/proctorActions";
 
 export const metadata: Metadata = {
   title: "Assign Proctors",

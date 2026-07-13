@@ -3,7 +3,7 @@
 import { Loader2Icon, PlusIcon, Trash2Icon, XIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "react-toastify";
-import { assignProctor, unassignProctor } from "@/server/actions/proctor";
+import { assignProctor, unassignProctor } from "@/server/proctorActions";
 import { Button } from "../shadcnui/button";
 
 type Proctor = {

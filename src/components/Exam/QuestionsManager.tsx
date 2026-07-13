@@ -9,8 +9,12 @@ import {
 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "react-toastify";
-import { deleteQuestion, updateQuestion } from "@/server/actions/exam";
-import { getBankQuestions, importBankQuestions } from "@/server/actions/bank";
+import { deleteQuestion, updateQuestion } from "@/server/examActions";
+import {
+  getBankHierarchy,
+  getBankQuestions,
+  importBankQuestions,
+} from "@/server/bankActions";
 import { questionFormSchema, QuestionFormType } from "@/lib/zodSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
@@ -45,6 +49,17 @@ type BankQuestion = {
   options: string | null;
   answer: string | null;
   points: number;
+  topic: {
+    id: string;
+    name: string;
+    subject: { id: string; name: string };
+  };
+};
+
+type HierarchyItem = {
+  id: string;
+  name: string;
+  topics: { id: string; name: string }[];
 };
 
 type QuestionsManagerProps = {
@@ -233,6 +248,9 @@ const EditQuestionForm = ({
 const ImportBankDialog = ({ examId }: { examId: string }) => {
   const [open, setOpen] = useState(false);
   const [bankQuestions, setBankQuestions] = useState<BankQuestion[]>([]);
+  const [hierarchy, setHierarchy] = useState<HierarchyItem[]>([]);
+  const [subjectId, setSubjectId] = useState("");
+  const [topicId, setTopicId] = useState("");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
@@ -240,9 +258,18 @@ const ImportBankDialog = ({ examId }: { examId: string }) => {
 
   const loadQuestions = useCallback(async () => {
     setFetching(true);
-    const data = await getBankQuestions();
-    setBankQuestions(data);
-    setFetching(false);
+    try {
+      const [questions, tree] = await Promise.all([
+        getBankQuestions(),
+        getBankHierarchy(),
+      ]);
+      setBankQuestions(questions);
+      setHierarchy(tree);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to load questions");
+    } finally {
+      setFetching(false);
+    }
   }, []);
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -251,8 +278,15 @@ const ImportBankDialog = ({ examId }: { examId: string }) => {
       loadQuestions();
       setSelected(new Set());
       setSearch("");
+      setSubjectId("");
+      setTopicId("");
     }
   };
+
+  const topicsForSubject =
+    subjectId ?
+      (hierarchy.find((s) => s.id === subjectId)?.topics ?? [])
+    : hierarchy.flatMap((s) => s.topics);
 
   const toggle = (id: string) => {
     setSelected((prev) => {
@@ -278,9 +312,13 @@ const ImportBankDialog = ({ examId }: { examId: string }) => {
     setLoading(false);
   };
 
-  const filtered = bankQuestions.filter((q) =>
-    q.text.toLowerCase().includes(search.toLowerCase()),
-  );
+  const filtered = bankQuestions.filter((q) => {
+    if (subjectId && q.topic.subject.id !== subjectId) return false;
+    if (topicId && q.topic.id !== topicId) return false;
+    if (search && !q.text.toLowerCase().includes(search.toLowerCase()))
+      return false;
+    return true;
+  });
 
   return (
     <Dialog
@@ -303,6 +341,38 @@ const ImportBankDialog = ({ examId }: { examId: string }) => {
           </DialogDescription>
         </DialogHeader>
 
+        <div className="grid grid-cols-2 gap-2">
+          <select
+            value={subjectId}
+            onChange={(e) => {
+              setSubjectId(e.target.value);
+              setTopicId("");
+            }}
+            className="bg-input/50 focus-visible:border-ring focus-visible:ring-ring/30 h-9 w-full rounded-3xl border border-transparent px-3 py-1 text-sm outline-none focus-visible:ring-3">
+            <option value="">All subjects</option>
+            {hierarchy.map((s) => (
+              <option
+                key={s.id}
+                value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={topicId}
+            onChange={(e) => setTopicId(e.target.value)}
+            className="bg-input/50 focus-visible:border-ring focus-visible:ring-ring/30 h-9 w-full rounded-3xl border border-transparent px-3 py-1 text-sm outline-none focus-visible:ring-3">
+            <option value="">All topics</option>
+            {topicsForSubject.map((t) => (
+              <option
+                key={t.id}
+                value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <div className="relative">
           <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
           <input
@@ -321,8 +391,8 @@ const ImportBankDialog = ({ examId }: { examId: string }) => {
             </div>
           : filtered.length === 0 ?
             <p className="text-muted-foreground py-8 text-center text-sm">
-              {search ?
-                "No questions match your search"
+              {search || subjectId || topicId ?
+                "No questions match your filters"
               : "No questions in the bank yet"}
             </p>
           : filtered.map((q) => (
@@ -336,7 +406,10 @@ const ImportBankDialog = ({ examId }: { examId: string }) => {
                 />
                 <div className="grid min-w-0 gap-0.5">
                   <span className="truncate font-medium">{q.text}</span>
-                  <span className="text-muted-foreground flex gap-2 text-xs">
+                  <span className="text-muted-foreground flex flex-wrap gap-2 text-xs">
+                    <span className="bg-muted rounded-full px-2 py-0.5">
+                      {q.topic.subject.name} · {q.topic.name}
+                    </span>
                     <span className="bg-muted rounded-full px-2 py-0.5">
                       {questionTypes[q.type] ?? q.type}
                     </span>

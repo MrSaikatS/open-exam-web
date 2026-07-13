@@ -5,7 +5,7 @@ import { ArrowLeftIcon, BarChart3Icon } from "lucide-react";
 import { Button } from "@/components/shadcnui/button";
 import { StatusBadge } from "@/components/Results/StatusBadge";
 import { PctBadge } from "@/components/Results/PctBadge";
-import { getExamResults } from "@/server/actions/results";
+import { getExamResults } from "@/server/resultsActions";
 
 export const metadata: Metadata = {
   title: "Exam Results",

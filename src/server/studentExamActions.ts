@@ -4,11 +4,9 @@ import "server-only";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { isAfter, isBefore } from "date-fns";
+import { addMinutes, isAfter, isBefore, min } from "date-fns";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/database/dbClient";
-import type { Prisma } from "@generated/prisma/client";
-
 const getStudentSession = async () => {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session || session.user.role !== "student") redirect("/");
@@ -72,19 +70,26 @@ export const startExam = async (examId: string) => {
 
     const existing = await prisma.examAttempt.findUnique({
       where: { userId_examId: { userId: session.user.id, examId } },
-      include: { exam: { select: { endTime: true } } },
+      include: { exam: { select: { endTime: true, duration: true } } },
     });
 
     if (existing) {
-      if (
-        existing.status === "in_progress" &&
-        existing.exam.endTime &&
-        isAfter(new Date(), existing.exam.endTime)
-      ) {
-        await submitAttempt(existing.id, examId);
-        return await prisma.examAttempt.findUnique({
-          where: { id: existing.id },
-        });
+      if (existing.status === "in_progress") {
+        const durationDeadline = addMinutes(
+          existing.startedAt,
+          existing.exam.duration,
+        );
+        const effectiveDeadline =
+          existing.exam.endTime ?
+            min([existing.exam.endTime, durationDeadline])
+          : durationDeadline;
+
+        if (isAfter(new Date(), effectiveDeadline)) {
+          await submitAttempt(existing.id, examId);
+          return await prisma.examAttempt.findUnique({
+            where: { id: existing.id },
+          });
+        }
       }
       return existing;
     }
@@ -138,6 +143,15 @@ export const getAttemptQuestions = async (attemptId: string) => {
   const questions = await prisma.question.findMany({
     where: { examId: attempt.examId },
     orderBy: { order: "asc" },
+    select: {
+      id: true,
+      examId: true,
+      text: true,
+      type: true,
+      options: true,
+      points: true,
+      order: true,
+    },
   });
 
   const answers = await prisma.answer.findMany({
@@ -157,14 +171,23 @@ export const saveAnswer = async (
   try {
     const attempt = await prisma.examAttempt.findUnique({
       where: { id: attemptId },
-      include: { exam: { select: { endTime: true } } },
+      include: { exam: { select: { endTime: true, duration: true } } },
     });
     if (!attempt || attempt.userId !== session.user.id)
       throw new Error("Unauthorized");
     if (attempt.status !== "in_progress")
       throw new Error("Exam already submitted");
 
-    if (attempt.exam.endTime && isAfter(new Date(), attempt.exam.endTime))
+    const durationDeadline = addMinutes(
+      attempt.startedAt,
+      attempt.exam.duration,
+    );
+    const effectiveDeadline =
+      attempt.exam.endTime ?
+        min([attempt.exam.endTime, durationDeadline])
+      : durationDeadline;
+
+    if (isAfter(new Date(), effectiveDeadline))
       throw new Error("The exam time has expired");
 
     const question = await prisma.question.findUnique({
@@ -173,10 +196,19 @@ export const saveAnswer = async (
     if (!question || question.examId !== attempt.examId)
       throw new Error("Question not found");
 
-    await prisma.answer.upsert({
-      where: { attemptId_questionId: { attemptId, questionId } },
-      create: { attemptId, questionId, text },
-      update: { text },
+    await prisma.$transaction(async (tx) => {
+      const current = await tx.examAttempt.findUnique({
+        where: { id: attemptId },
+        select: { status: true },
+      });
+      if (!current || current.status !== "in_progress")
+        throw new Error("Exam already submitted");
+
+      await tx.answer.upsert({
+        where: { attemptId_questionId: { attemptId, questionId } },
+        create: { attemptId, questionId, text },
+        update: { text },
+      });
     });
   } catch (e) {
     if (e instanceof Error) throw e;
@@ -218,48 +250,53 @@ const autoGrade = (
 };
 
 const submitAttempt = async (attemptId: string, examId: string) => {
-  const questions = await prisma.question.findMany({
-    where: { examId },
-    orderBy: { order: "asc" },
-  });
+  await prisma.$transaction(
+    async (tx) => {
+      const current = await tx.examAttempt.findUnique({
+        where: { id: attemptId },
+        select: { status: true },
+      });
+      if (!current || current.status !== "in_progress")
+        throw new Error("Exam already submitted");
 
-  const answers = await prisma.answer.findMany({
-    where: { attemptId },
-  });
+      const questions = await tx.question.findMany({
+        where: { examId },
+        orderBy: { order: "asc" },
+      });
 
-  const answerMap = new Map(answers.map((a) => [a.questionId, a]));
+      const answers = await tx.answer.findMany({
+        where: { attemptId },
+      });
 
-  let autoScore = 0;
-  const updates: Prisma.PrismaPromise<unknown>[] = [];
-  for (const question of questions) {
-    const answer = answerMap.get(question.id);
-    const text = answer?.text ?? "";
-    const score = autoGrade(text, question);
-    autoScore += score;
+      const answerMap = new Map(answers.map((a) => [a.questionId, a]));
 
-    if (answer) {
-      updates.push(
-        prisma.answer.update({
-          where: { id: answer.id },
-          data: { score },
-        }),
-      );
-    }
-  }
+      let autoScore = 0;
+      for (const question of questions) {
+        const answer = answerMap.get(question.id);
+        const text = answer?.text ?? "";
+        const score = autoGrade(text, question);
+        autoScore += score;
 
-  updates.push(
-    prisma.examAttempt.update({
-      where: { id: attemptId },
-      data: {
-        status: "submitted",
-        submittedAt: new Date(),
-        autoScore,
-        totalScore: autoScore,
-      },
-    }),
+        if (answer) {
+          await tx.answer.update({
+            where: { id: answer.id },
+            data: { score },
+          });
+        }
+      }
+
+      await tx.examAttempt.update({
+        where: { id: attemptId },
+        data: {
+          status: "submitted",
+          submittedAt: new Date(),
+          autoScore,
+          totalScore: autoScore,
+        },
+      });
+    },
+    { timeout: 30_000 },
   );
-
-  await prisma.$transaction(updates);
 };
 
 export const submitExam = async (attemptId: string) => {
@@ -329,6 +366,8 @@ export const getResultDetail = async (attemptId: string) => {
 
   if (!attempt || attempt.userId !== session.user.id)
     redirect("/student/results");
+
+  if (attempt.status !== "submitted") redirect("/student/exams");
 
   return attempt;
 };

@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "My Results",
+  description: "View your exam results and scores",
+};
 import { format } from "date-fns";
-import { getStudentResults } from "@/server/actions/studentExam";
+import { getStudentResults } from "@/server/studentExamActions";
 import {
   Card,
   CardContent,

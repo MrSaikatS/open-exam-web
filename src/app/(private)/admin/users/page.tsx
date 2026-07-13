@@ -32,6 +32,7 @@ const AdminUsersPage = async () => {
             name: string;
             email: string;
             role: string;
+            image: string | null;
             banned: boolean;
             banReason: string | null;
             banExpires: Date | null;

@@ -1,6 +1,6 @@
 "use client";
 
-import { submitExam } from "@/server/actions/studentExam";
+import { submitExam } from "@/server/studentExamActions";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -28,7 +28,6 @@ type Question = {
   text: string;
   type: string;
   options: string | null;
-  answer: string | null;
   points: number;
   order: number;
 };
@@ -83,7 +82,7 @@ export const ExamPlayer = ({
   const saveAnswer = useCallback(
     async (questionId: string, text: string) => {
       const { saveAnswer: doSave } =
-        await import("@/server/actions/studentExam");
+        await import("@/server/studentExamActions");
       await doSave(attemptId, questionId, text);
     },
     [attemptId],
@@ -142,7 +141,7 @@ export const ExamPlayer = ({
 
         if (q) {
           const text = answersRef.current[q.id] ?? "";
-          import("@/server/actions/studentExam")
+          import("@/server/studentExamActions")
             .then((m) => m.saveAnswer(attemptId, q.id, text))
             .catch(() => {})
             .finally(doSubmit);

@@ -1,93 +1,93 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { Route } from "next";
-import { BookOpenIcon, PlusIcon } from "lucide-react";
+import { BookOpenIcon, ChevronRightIcon, LayersIcon } from "lucide-react";
+import CreateSubjectDialog from "@/components/Bank/CreateSubjectDialog";
+import DeleteSubjectButton from "@/components/Bank/DeleteSubjectButton";
 import { Button } from "@/components/shadcnui/button";
-import { getBankQuestions } from "@/server/actions/bank";
-import DeleteBankQuestionButton from "@/components/Exam/DeleteBankQuestionButton";
+import { getSubjects } from "@/server/bankActions";
 
 export const metadata: Metadata = {
   title: "Question Bank",
-  description: "Manage reusable questions",
-};
-
-const questionTypes: Record<string, string> = {
-  multiple_choice: "Multiple Choice",
-  single_choice: "Single Choice",
-  true_false: "True / False",
-  short_answer: "Short Answer",
+  description: "Browse subjects in the question bank",
 };
 
 const AdminQuestionBankPage = async () => {
-  const questions = await getBankQuestions();
+  const subjects = await getSubjects();
 
   return (
     <section className="grid gap-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-medium">Question Bank</h1>
-        <Link href="/admin/questions/new">
-          <Button
-            variant="outline"
-            size="lg">
-            <PlusIcon className="size-4" /> New Question
-          </Button>
-        </Link>
+        <div>
+          <h1 className="text-2xl font-medium">Question Bank</h1>
+          <p className="text-muted-foreground text-sm">
+            Organize questions by subject and topic
+          </p>
+        </div>
+        <CreateSubjectDialog />
       </div>
 
-      {questions.length === 0 ?
+      {subjects.length === 0 ?
         <div className="flex flex-col items-center gap-4 py-16 text-center">
           <BookOpenIcon className="text-muted-foreground size-12" />
-          <p className="text-muted-foreground text-lg">No questions yet</p>
-          <Link href={"/admin/questions/new" as Route}>
-            <Button variant="default">Create your first question</Button>
-          </Link>
+          <p className="text-muted-foreground text-lg">No subjects yet</p>
+          <p className="text-muted-foreground text-sm">
+            Create a subject to start organizing your question bank.
+          </p>
         </div>
-      : <div className="border-border overflow-x-auto rounded-3xl border">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-border bg-muted/50 border-b">
-                <th className="px-4 py-3 text-left font-medium">Question</th>
-                <th className="px-4 py-3 text-left font-medium">Type</th>
-                <th className="px-4 py-3 text-left font-medium">Points</th>
-                <th className="px-4 py-3 text-left font-medium">Created by</th>
-                <th className="px-4 py-3 text-right font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {questions.map((q) => (
-                <tr
-                  key={q.id}
-                  className="border-border hover:bg-muted/30 border-b last:border-0">
-                  <td className="max-w-xs truncate px-4 py-3 font-medium">
-                    {q.text}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="bg-muted rounded-full px-2.5 py-0.5 text-xs">
-                      {questionTypes[q.type] ?? q.type}
-                    </span>
-                  </td>
-                  <td className="text-muted-foreground px-4 py-3">
-                    {q.points} pt{q.points !== 1 ? "s" : ""}
-                  </td>
-                  <td className="text-muted-foreground px-4 py-3">
-                    {q.createdBy.name}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-1">
-                      <Link href={`/admin/questions/${q.id}` as Route}>
-                        <Button
-                          variant="outline"
-                          size="icon-lg">
-                          Edit
-                        </Button>
-                      </Link>
-                      <DeleteBankQuestionButton id={q.id} />
+      : <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {subjects.map((subject) => {
+            const questionCount = subject.topics.reduce(
+              (sum, t) => sum + t._count.questions,
+              0,
+            );
+            return (
+              <div
+                key={subject.id}
+                className="border-border bg-card flex flex-col gap-3 rounded-3xl border p-5">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="grid min-w-0 gap-1">
+                    <div className="flex items-center gap-2">
+                      <LayersIcon className="text-muted-foreground size-4 shrink-0" />
+                      <h2 className="truncate font-medium">{subject.name}</h2>
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    {subject.description && (
+                      <p className="text-muted-foreground line-clamp-2 text-sm">
+                        {subject.description}
+                      </p>
+                    )}
+                  </div>
+                  <DeleteSubjectButton
+                    id={subject.id}
+                    name={subject.name}
+                    disabled={subject._count.topics > 0}
+                  />
+                </div>
+                <div className="text-muted-foreground flex flex-wrap gap-2 text-xs">
+                  <span className="bg-muted rounded-full px-2.5 py-0.5">
+                    {subject._count.topics} topic
+                    {subject._count.topics !== 1 ? "s" : ""}
+                  </span>
+                  <span className="bg-muted rounded-full px-2.5 py-0.5">
+                    {questionCount} question
+                    {questionCount !== 1 ? "s" : ""}
+                  </span>
+                </div>
+                <Link
+                  href={
+                    `/admin/questions/subjects/${subject.id}` as Route
+                  }>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="w-full">
+                    View Topics
+                    <ChevronRightIcon className="size-4" />
+                  </Button>
+                </Link>
+              </div>
+            );
+          })}
         </div>
       }
     </section>
